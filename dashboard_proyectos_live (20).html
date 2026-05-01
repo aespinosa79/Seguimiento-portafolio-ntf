@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Portafolio NTF 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+/* ══════════════════════════════════════════
+   MODO CLARO — PALETA CORPORATIVA
+   Primario teal  : #127270
+   Medio          : #1a9896
+   Brillante      : #2bbfbc
+   Claro          : #e8f7f7
+   Fondo          : #ffffff / #f4fafa
+   ══════════════════════════════════════════ */
+:root{
+  --bg:   #f4fafa;
+  --bg2:  #ffffff;
+  --bg3:  #eaf4f4;
+  --bg4:  #d6eded;
+  --border:  rgba(18,114,112,0.12);
+  --border2: rgba(18,114,112,0.25);
+  --text:   #0d2e2e;
+  --muted:  #4a8080;
+  --muted2: #7aabab;
+  --accent:  #127270;
+  --accent2: #1a9896;
+  --accent3: #0d4f4e;
+  --green:  #0f8a80;
+  --amber:  #c07800;
+  --red:    #c0404e;
+  --purple: #127270;
+  --teal:   #2bbfbc;
+  font-family:'Inter','Segoe UI',system-ui,sans-serif;
+  font-size:13px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:var(--bg);
+  background-image:
+    radial-gradient(ellipse 70% 40% at 50% -5%, rgba(43,191,188,.07) 0%, transparent 65%);
+  color:var(--text);
+  min-height:100vh;
+}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:#eaf4f4;}
+::-webkit-scrollbar-thumb{background:#2bbfbc;border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:#127270;}
+
+/* ── LOADING ── */
+#loading{
+  position:fixed;inset:0;background:#f4fafa;
+  flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;z-index:9999;
+  display:none;
+}
+#loading.show{display:flex !important;}
+.spinner{
+  width:44px;height:44px;
+  border:2px solid #d6eded;border-top-color:#2bbfbc;
+  border-radius:50%;animation:spin .9s linear infinite;
+  box-shadow:0 0 18px rgba(43,191,188,.2);
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+#loading .lt{color:var(--text);font-size:15px;font-weight:600;}
+#loading .lm{color:var(--muted);font-size:11px;text-align:center;max-width:280px;}
+
+/* ── ERROR ── */
+#err-banner{
+  display:none;
+  background:rgba(192,64,78,.07);border:1px solid rgba(192,64,78,.2);
+  border-radius:8px;margin:12px 26px;padding:11px 16px;
+  font-size:11px;color:#a03040;
+}
+
+/* ── TOPBAR ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 26px;height:54px;
+  background:linear-gradient(90deg, #0d4f4e 0%, #127270 50%, #1a9896 100%);
+  border-bottom:none;
+  position:sticky;top:0;z-index:100;
+  flex-wrap:wrap;gap:8px;
+  box-shadow:0 2px 20px rgba(13,79,78,.25);
+}
+.tl{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.corp-logo{display:flex;align-items:center;gap:9px;}
+.corp-logo-icon{
+  width:30px;height:30px;
+  background:rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:#fff;
+  letter-spacing:-1px;flex-shrink:0;
+  backdrop-filter:blur(4px);
+}
+.logo-divider{width:1px;height:20px;background:rgba(255,255,255,.2);margin:0 2px;}
+.topbar h1{font-size:13px;font-weight:600;color:rgba(255,255,255,.9);letter-spacing:.2px;}
+.topbar h1 span{color:#7de8e6;font-weight:700;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.live-badge{font-size:9px;padding:3px 9px;border-radius:20px;display:flex;align-items:center;gap:4px;font-weight:500;}
+.live-ok{color:#7de8e6;background:rgba(255,255,255,.1);border:1px solid rgba(125,232,230,.3);}
+.live-err{color:#ffaaaa;background:rgba(255,100,100,.1);border:1px solid rgba(255,100,100,.25);}
+.live-loading{color:rgba(255,255,255,.6);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);}
+.live-dot{width:5px;height:5px;border-radius:50%;animation:pulse 1.5s infinite;}
+.today-b{
+  font-size:9px;color:rgba(255,255,255,.7);
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
+  padding:3px 9px;border-radius:20px;letter-spacing:.2px;
+}
+.tabs{display:flex;gap:3px;}
+.tab{
+  font-size:11px;padding:5px 13px;border-radius:5px;
+  border:1px solid transparent;cursor:pointer;
+  background:rgba(255,255,255,.08);
+  color:rgba(255,255,255,.65);
+  transition:all .15s;font-weight:500;
+}
+.tab.active{
+  background:#fff;color:#127270;
+  border-color:rgba(255,255,255,.5);
+  font-weight:600;
+  box-shadow:0 2px 10px rgba(0,0,0,.15);
+}
+.tab:hover:not(.active){background:rgba(255,255,255,.15);color:#fff;}
+.refresh-btn{
+  font-size:11px;padding:5px 11px;border-radius:5px;
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);
+  color:rgba(255,255,255,.85);cursor:pointer;
+  display:flex;align-items:center;gap:4px;transition:all .15s;font-weight:500;
+}
+.refresh-btn:hover{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.4);}
+.refresh-btn.spinning svg{animation:spin .7s linear infinite;}
+
+/* ── FILTERS ── */
+.filters{
+  display:flex;gap:10px;padding:9px 26px;
+  background:#fff;border-bottom:1px solid var(--border);
+  flex-wrap:wrap;align-items:flex-end;
+  box-shadow:0 1px 6px rgba(18,114,112,.06);
+}
+.fg{display:flex;flex-direction:column;gap:2px;}
+.fl{font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px;padding-left:2px;font-weight:600;}
+select{
+  background:#fff;border:1px solid var(--border);
+  color:var(--text);font-size:11px;
+  padding:5px 9px;border-radius:5px;outline:none;cursor:pointer;min-width:130px;
+  transition:border-color .15s;
+}
+select:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(26,152,150,.1);}
+select:hover{border-color:var(--accent2);}
+.clear-btn{
+  font-size:11px;padding:5px 11px;border-radius:5px;
+  background:none;border:1px solid var(--border);
+  color:var(--muted);cursor:pointer;transition:all .15s;
+}
+.clear-btn:hover{color:var(--red);border-color:rgba(192,64,78,.3);background:rgba(192,64,78,.04);}
+.upd-txt{font-size:9px;color:var(--muted2);margin-left:auto;letter-spacing:.2px;}
+
+/* ── MAIN ── */
+.main{padding:18px 26px;max-width:1500px;margin:0 auto;}
+
+/* ── KPI CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px;}
+.kpi{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:12px;padding:16px 18px;
+  position:relative;overflow:hidden;cursor:pointer;
+  transition:border-color .2s,transform .12s,box-shadow .2s;
+  box-shadow:0 1px 4px rgba(18,114,112,.06);
+}
+.kpi:hover{
+  transform:translateY(-3px);
+  box-shadow:0 8px 28px rgba(18,114,112,.14), 0 0 0 1px rgba(43,191,188,.25);
+}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;}
+.k-total::before{background:linear-gradient(180deg,#2bbfbc,#127270);}
+.k-comp::before{background:linear-gradient(180deg,#0f8a80,#065a56);}
+.k-enc::before{background:linear-gradient(180deg,#1a9896,#0d6664);}
+.k-venc::before{background:linear-gradient(180deg,#c0404e,#8a2030);}
+.k-crit::before{background:linear-gradient(180deg,#c07800,#8a5200);}
+.kpi:hover.k-total{border-color:rgba(43,191,188,.4);}
+.kpi:hover.k-comp{border-color:rgba(15,138,128,.4);}
+.kpi:hover.k-enc{border-color:rgba(26,152,150,.4);}
+.kpi:hover.k-venc{border-color:rgba(192,64,78,.4);}
+.kpi:hover.k-crit{border-color:rgba(192,120,0,.4);}
+.kpi-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;font-weight:600;}
+.kpi-val{font-size:28px;font-weight:700;line-height:1;letter-spacing:-1px;}
+.kpi-sub{font-size:9px;color:var(--muted);margin-top:4px;}
+.kpi-hint{font-size:8px;color:var(--muted2);margin-top:6px;font-style:italic;}
+.k-total .kpi-val{color:#127270;}
+.k-comp .kpi-val{color:#0f8a80;}
+.k-enc .kpi-val{color:#1a9896;}
+.k-venc .kpi-val{color:#c0404e;}
+.k-crit .kpi-val{color:#c07800;}
+
+/* ── CARDS ── */
+.row2{display:grid;grid-template-columns:1.35fr 1fr;gap:14px;margin-bottom:18px;}
+.card{
+  background:#fff;border:1px solid var(--border);
+  border-radius:12px;padding:17px 19px;
+  box-shadow:0 1px 6px rgba(18,114,112,.05);
+}
+.ctitle{
+  font-size:9px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:1.1px;margin-bottom:14px;
+  display:flex;align-items:center;gap:6px;
+}
+.ctitle::before{
+  content:'';width:12px;height:2px;
+  background:linear-gradient(90deg,#2bbfbc,transparent);
+  border-radius:1px;flex-shrink:0;
+}
+.ctitle small{font-weight:400;opacity:.5;font-size:8px;margin-left:2px;}
+
+/* ── PROGRESS BARS ── */
+.pbars{display:flex;flex-direction:column;gap:9px;}
+.prow{
+  display:flex;align-items:center;gap:8px;cursor:pointer;
+  padding:4px 6px;border-radius:6px;transition:background .15s;
+}
+.prow:hover{background:var(--bg3);}
+.pname{width:110px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);}
+.ptrack{flex:1;height:7px;background:var(--bg3);border-radius:4px;overflow:hidden;display:flex;}
+.pseg{height:100%;transition:width .5s;}
+.ppct{width:32px;text-align:right;font-size:10px;font-weight:700;}
+.pstats{display:flex;gap:5px;font-size:8px;color:var(--muted2);}
+.sdot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:1px;}
+.leg-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--muted);}
+.leg-box{width:9px;height:9px;border-radius:2px;}
+.leg-line{width:14px;height:2px;border-radius:1px;}
+
+/* ── MODAL ── */
+#overlay{
+  position:fixed;inset:0;background:rgba(13,46,46,.45);
+  z-index:600;display:none;align-items:flex-start;justify-content:center;
+  padding-top:60px;backdrop-filter:blur(6px);
+}
+#overlay.open{display:flex;}
+#modal{
+  background:#fff;border:1px solid var(--border2);
+  border-radius:16px;width:90%;max-width:760px;max-height:80vh;
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 24px 80px rgba(13,46,46,.25), 0 0 0 1px rgba(43,191,188,.15);
+}
+.mhdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:15px 19px;border-bottom:1px solid var(--border);
+  background:linear-gradient(90deg,#f4fafa,#fff);
+}
+.mtitle{font-size:13px;font-weight:600;color:var(--text);}
+.mcnt{
+  font-size:9px;color:var(--accent2);margin-left:8px;
+  background:rgba(26,152,150,.08);border:1px solid rgba(26,152,150,.2);
+  padding:2px 8px;border-radius:10px;font-weight:600;
+}
+.mclose{
+  background:var(--bg3);border:1px solid var(--border);
+  color:var(--muted);cursor:pointer;border-radius:6px;
+  width:27px;height:27px;font-size:13px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.mclose:hover{background:var(--bg4);color:var(--text);border-color:var(--accent2);}
+.mbody{overflow-y:auto;padding:14px 18px;flex:1;}
+.dcard{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:8px;padding:12px 14px;margin-bottom:8px;
+  display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;
+  transition:border-color .15s,box-shadow .15s;
+}
+.dcard:hover{border-color:var(--accent2);box-shadow:0 2px 8px rgba(18,114,112,.08);}
+.dcard:last-child{margin-bottom:0;}
+.dtit{font-size:12px;font-weight:500;color:var(--text);margin-bottom:5px;line-height:1.4;}
+.dmeta{display:flex;flex-wrap:wrap;gap:4px;}
+.dproy{font-size:9px;padding:2px 7px;border-radius:3px;font-weight:600;}
+.dfase{font-size:9px;color:var(--muted);border:1px solid var(--border);padding:1px 5px;border-radius:3px;background:#fff;}
+.dasig{font-size:9px;color:var(--muted);margin-top:5px;display:flex;align-items:center;gap:3px;}
+.dasig strong{color:var(--text);font-weight:500;}
+.dright{text-align:right;}
+.dfec{font-size:9px;color:var(--muted);margin-bottom:4px;}
+.dbadges{display:flex;gap:3px;justify-content:flex-end;flex-wrap:wrap;}
+.ddias{font-size:9px;margin-top:3px;font-weight:700;}
+.mempty{text-align:center;padding:32px;color:var(--muted);font-size:12px;}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:9px;font-weight:700;white-space:nowrap;letter-spacing:.2px;}
+.bv{background:rgba(192,64,78,.1);color:#a03040;}
+.bc{background:rgba(192,120,0,.1);color:#9a6000;}
+.bp{background:rgba(192,120,0,.08);color:#b07010;}
+.bt{background:rgba(15,138,128,.1);color:#0a6860;}
+.bco{background:rgba(74,128,128,.1);color:#3a6868;}
+.bs{background:rgba(43,191,188,.08);color:#127270;}
+.pc{background:rgba(192,64,78,.1);color:#a03040;}
+.pa{background:rgba(192,120,0,.1);color:#9a6000;}
+.pm{background:rgba(18,114,112,.1);color:#127270;}
+.pb{background:rgba(43,191,188,.08);color:#1a9896;}
+
+/* ── TABLE ── */
+.tsec{
+  background:#fff;border:1px solid var(--border);
+  border-radius:12px;overflow:hidden;
+  box-shadow:0 1px 6px rgba(18,114,112,.05);
+}
+.thdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:13px 19px;border-bottom:1px solid var(--border);
+  background:linear-gradient(90deg,var(--bg3),#fff);
+}
+.thdr h3{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.1px;}
+.at{width:100%;border-collapse:collapse;font-size:11px;}
+.at th{
+  text-align:left;padding:9px 13px;
+  color:var(--muted);font-weight:600;font-size:9px;
+  text-transform:uppercase;letter-spacing:.7px;
+  border-bottom:1px solid var(--border);
+  background:var(--bg3);cursor:pointer;user-select:none;transition:color .15s;
+}
+.at th:hover{color:var(--accent);}
+.at td{padding:9px 13px;border-bottom:1px solid var(--border);}
+.at tr:last-child td{border-bottom:none;}
+.at tr:hover td{background:#f4fafa;}
+.edot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px;}
+.dp{color:#0f8a80;}.dw{color:#c07800;}.dc{color:#a06000;}.dv{color:#c0404e;font-weight:700;}.dn{color:var(--muted);}
+.empty{text-align:center;padding:36px;color:var(--muted);font-size:12px;}
+.page{display:none;}.page.active{display:block;}
+
+/* ── SEMANA TABLE ── */
+.ss{overflow-x:auto;}
+.st{border-collapse:collapse;width:100%;min-width:700px;font-size:10px;}
+.st th{
+  text-align:center;padding:8px 9px;
+  background:var(--bg3);color:var(--muted);
+  font-weight:600;border:1px solid var(--border);
+  white-space:nowrap;letter-spacing:.3px;font-size:9px;
+}
+.st th.pth{text-align:left;}
+.st td{text-align:center;padding:7px 8px;border:1px solid var(--border);}
+.st td.ptd{text-align:left;padding-left:11px;font-weight:500;}
+.cc{cursor:pointer;transition:all .15s;}
+.cc:hover{filter:brightness(.93);}
+.c0{background:var(--bg3);color:var(--muted2);}
+.c1{background:rgba(43,191,188,.1);color:#127270;font-weight:600;}
+.c2{background:rgba(192,120,0,.1);color:#9a6000;font-weight:600;}
+.c3{background:rgba(192,64,78,.1);color:#a03040;font-weight:600;}
+.wn{outline:2px solid rgba(43,191,188,.5);}
+.chart-wrap{position:relative;width:100%;}
+@media(max-width:1000px){
+  .kpi-grid{grid-template-columns:repeat(3,1fr);}
+  .row2{grid-template-columns:1fr;}
+}
+
+/* ══ LOGIN ══════════════════════════════════════════════ */
+#login-screen{
+  position:fixed;inset:0;z-index:10000;
+  background:linear-gradient(135deg,#0d4f4e 0%,#127270 40%,#1a9896 100%);
+  display:flex;align-items:center;justify-content:center;
+}
+.login-box{
+  background:#fff;border-radius:20px;padding:44px 40px;
+  width:100%;max-width:400px;
+  box-shadow:0 32px 80px rgba(0,0,0,.3);
+  display:flex;flex-direction:column;gap:0;
+}
+.login-logo{
+  width:54px;height:54px;
+  background:linear-gradient(135deg,#2bbfbc,#0d4f4e);
+  border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;color:#fff;
+  margin:0 auto 20px;
+  box-shadow:0 6px 20px rgba(43,191,188,.35);
+}
+.login-title{font-size:20px;font-weight:700;color:#0d2e2e;text-align:center;margin-bottom:4px;}
+.login-sub{font-size:11px;color:#7aabab;text-align:center;margin-bottom:28px;}
+.login-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.login-field label{font-size:10px;font-weight:600;color:#4a8080;text-transform:uppercase;letter-spacing:.7px;}
+.login-field input{
+  padding:10px 13px;border:1px solid rgba(18,114,112,.2);
+  border-radius:8px;font-size:13px;color:#0d2e2e;
+  outline:none;transition:all .15s;background:#f9fefe;
+}
+.login-field input:focus{border-color:#1a9896;box-shadow:0 0 0 3px rgba(26,152,150,.12);background:#fff;}
+.login-btn{
+  margin-top:8px;padding:12px;
+  background:linear-gradient(135deg,#127270,#1a9896);
+  color:#fff;border:none;border-radius:8px;
+  font-size:13px;font-weight:600;cursor:pointer;
+  transition:all .15s;letter-spacing:.2px;
+}
+.login-btn:hover{background:linear-gradient(135deg,#0d4f4e,#127270);box-shadow:0 4px 14px rgba(18,114,112,.3);}
+.login-error{
+  font-size:11px;color:#c0404e;text-align:center;
+  background:rgba(192,64,78,.07);border:1px solid rgba(192,64,78,.18);
+  padding:8px;border-radius:6px;margin-top:10px;display:none;
+}
+
+/* ══ TOPBAR USUARIO ══════════════════════════════════════ */
+#user-pill{
+  display:flex;align-items:center;gap:7px;
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+  border-radius:20px;padding:4px 12px 4px 6px;cursor:default;
+}
+.user-avatar{
+  width:24px;height:24px;border-radius:50%;
+  background:rgba(255,255,255,.25);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:#fff;flex-shrink:0;
+}
+#user-name{font-size:10px;color:rgba(255,255,255,.9);font-weight:500;}
+#user-role-badge{
+  font-size:8px;padding:1px 6px;border-radius:10px;font-weight:700;
+  background:rgba(255,255,255,.2);color:#fff;
+}
+.logout-btn{
+  font-size:10px;padding:4px 9px;border-radius:5px;
+  background:rgba(192,64,78,.2);border:1px solid rgba(192,64,78,.3);
+  color:#ffaaaa;cursor:pointer;transition:all .15s;
+}
+.logout-btn:hover{background:rgba(192,64,78,.35);}
+
+/* ══ ADMIN PAGES ════════════════════════════════════════ */
+.admin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+.stat-card{
+  background:#fff;border:1px solid var(--border);border-radius:12px;
+  padding:16px 18px;text-align:center;
+  box-shadow:0 1px 4px rgba(18,114,112,.05);
+}
+.stat-card .sv{font-size:32px;font-weight:700;color:#127270;line-height:1;}
+.stat-card .sl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:4px;}
+.access-table{width:100%;border-collapse:collapse;font-size:11px;}
+.access-table th{
+  text-align:left;padding:9px 13px;background:var(--bg3);
+  color:var(--muted);font-size:9px;text-transform:uppercase;
+  letter-spacing:.6px;border-bottom:1px solid var(--border);font-weight:600;
+}
+.access-table td{padding:9px 13px;border-bottom:1px solid var(--border);}
+.access-table tr:last-child td{border-bottom:none;}
+.access-table tr:hover td{background:#f4fafa;}
+.role-admin{background:rgba(18,114,112,.1);color:#127270;padding:2px 7px;border-radius:3px;font-size:9px;font-weight:700;}
+.role-user{background:rgba(26,152,150,.08);color:#1a9896;padding:2px 7px;border-radius:3px;font-size:9px;font-weight:700;}
+
+/* Notif button */
+.notif-btn{
+  font-size:10px;padding:4px 10px;border-radius:5px;
+  background:rgba(18,114,112,.08);border:1px solid rgba(18,114,112,.2);
+  color:#127270;cursor:pointer;transition:all .15s;
+}
+.notif-btn:hover{background:rgba(18,114,112,.16);border-color:#127270;}
+.notif-btn.sent{background:rgba(15,138,128,.1);color:#0f8a80;border-color:rgba(15,138,128,.3);}
+
+/* Admin tabs */
+.admin-tabs{display:flex;gap:3px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:0;}
+.admin-tab{
+  font-size:11px;padding:7px 16px;border-radius:7px 7px 0 0;
+  border:1px solid transparent;border-bottom:none;
+  cursor:pointer;background:none;color:var(--muted);font-weight:500;
+  transition:all .15s;margin-bottom:-1px;
+}
+.admin-tab.active{background:#fff;color:#127270;border-color:var(--border);font-weight:600;}
+.admin-tab:hover:not(.active){background:var(--bg3);color:#127270;}
+.admin-panel{display:none;}.admin-panel.active{display:block;}
+
+
+/* ══ LOGIN ══════════════════════════════════════════════ */
+#login-screen{
+  position:fixed;inset:0;z-index:10000;
+  background:linear-gradient(135deg,#0d4f4e 0%,#127270 40%,#1a9896 100%);
+  display:flex;align-items:center;justify-content:center;
+}
+.login-box{
+  background:#fff;border-radius:20px;padding:44px 40px;
+  width:100%;max-width:400px;
+  box-shadow:0 32px 80px rgba(0,0,0,.3);
+}
+.login-logo{
+  width:54px;height:54px;
+  background:linear-gradient(135deg,#2bbfbc,#0d4f4e);
+  border-radius:14px;display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;color:#fff;
+  margin:0 auto 20px;
+  box-shadow:0 6px 20px rgba(43,191,188,.35);
+}
+.login-title{font-size:20px;font-weight:700;color:#0d2e2e;text-align:center;margin-bottom:4px;}
+.login-sub{font-size:11px;color:#7aabab;text-align:center;margin-bottom:28px;}
+.login-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.login-field label{font-size:10px;font-weight:600;color:#4a8080;text-transform:uppercase;letter-spacing:.7px;}
+.login-field input{
+  padding:10px 13px;border:1.5px solid rgba(18,114,112,.2);
+  border-radius:8px;font-size:13px;color:#0d2e2e;
+  outline:none;transition:all .15s;background:#f9fefe;width:100%;
+}
+.login-field input:focus{border-color:#1a9896;box-shadow:0 0 0 3px rgba(26,152,150,.12);background:#fff;}
+.login-btn{
+  margin-top:8px;padding:12px;width:100%;
+  background:linear-gradient(135deg,#127270,#1a9896);
+  color:#fff;border:none;border-radius:8px;
+  font-size:13px;font-weight:600;cursor:pointer;
+  transition:all .15s;
+}
+.login-btn:hover{opacity:.9;box-shadow:0 4px 14px rgba(18,114,112,.3);}
+.login-error{
+  font-size:11px;color:#c0404e;text-align:center;
+  background:rgba(192,64,78,.07);border:1px solid rgba(192,64,78,.18);
+  padding:8px;border-radius:6px;margin-top:12px;display:none;
+}
+/* ══ LOADING ══ */
+#loading{
+  position:fixed;inset:0;background:#f4fafa;z-index:9000;
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+}
+#loading.show{display:flex;}
+
+</style>
+<script>
+window.DASH_USERS = [
+  {email:'aespinosa@sofgenpharma.com',  nombre:'Alberto Espinosa',   pass:'Admin2026NTF', rol:'admin', initials:'AE'},
+  {email:'iromero@sofgenpharma.com',    nombre:'Ivan Romero',        pass:'IvNTF2026',    rol:'user',  initials:'IR'},
+  {email:'jerperez@sofgenpharma.com',   nombre:'Jerson Perez',       pass:'JrNTF2026',    rol:'user',  initials:'JP'},
+  {email:'fhoyos@sofgenpharma.com',     nombre:'Ferney Hoyos',       pass:'FhNTF2026',    rol:'user',  initials:'FH'},
+  {email:'eduguerrero@sofgenpharma.com',nombre:'Eduardo Guerrero',   pass:'EdNTF2026',    rol:'user',  initials:'EG'},
+  {email:'ep-ntf-data2@procaps.com.co', nombre:'Breiner Villanueva', pass:'BrNTF2026',    rol:'user',  initials:'BV'},
+  {email:'ep-ntf-data@procaps.com.co',  nombre:'Emma Padilla',       pass:'EmNTF2026',    rol:'user',  initials:'EP'},
+];
+window.DASH_USER = null;
+window.DASH_SESSION_START = null;
+const AKEY = 'ntf_access_log';
+
+function doLogin(){
+  var eEl = document.getElementById('li-email');
+  var pEl = document.getElementById('li-pass');
+  var errEl = document.getElementById('li-err');
+  var email = eEl.value.trim().toLowerCase();
+  var pass = pEl.value.trim();
+  var user = null;
+  for(var i=0;i<window.DASH_USERS.length;i++){
+    if(window.DASH_USERS[i].email===email && window.DASH_USERS[i].pass===pass){
+      user=window.DASH_USERS[i]; break;
+    }
+  }
+  if(!user){
+    errEl.style.display='block';
+    errEl.textContent='Correo o contraseña incorrectos.';
+    pEl.value=''; pEl.focus(); return;
+  }
+  errEl.style.display='none';
+  window.DASH_USER = user;
+  window.DASH_SESSION_START = new Date();
+  // Log acceso
+  try{
+    var log=JSON.parse(localStorage.getItem(AKEY)||'[]');
+    log.unshift({email:user.email,nombre:user.nombre,rol:user.rol,
+      fecha:window.DASH_SESSION_START.toLocaleDateString('es-CO'),
+      hora:window.DASH_SESSION_START.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+      ts:window.DASH_SESSION_START.getTime(),duracion:null});
+    localStorage.setItem(AKEY,JSON.stringify(log));
+  }catch(e){}
+  // Ocultar login
+  document.getElementById('login-screen').style.display='none';
+  // Mostrar UI de usuario
+  var pill=document.getElementById('user-pill');
+  pill.style.display='flex';
+  document.getElementById('logout-btn').style.display='block';
+  document.getElementById('user-name').textContent=user.nombre.split(' ')[0];
+  document.getElementById('user-avatar').textContent=user.initials;
+  document.getElementById('user-role-badge').textContent=user.rol==='admin'?'ADMIN':'USER';
+  if(user.rol==='admin'){
+    document.querySelectorAll('.admin-only').forEach(function(el){el.style.display='';});
+  }
+  // Mostrar spinner y cargar datos
+  var ldg=document.getElementById('loading');
+  ldg.className='show'; // usa CSS display:flex
+  document.getElementById('lm').textContent='Cargando datos...';
+  // Sincronizar con el script principal
+  if(typeof CURRENT_USER!=='undefined') CURRENT_USER=user;
+  if(typeof SESSION_START!=='undefined') SESSION_START=window.DASH_SESSION_START;
+  // Llamar loadData con reintentos
+  // Llamar loadData cuando esté lista
+  var _tries = 0;
+  function _tryLoad(){
+    _tries++;
+    if(typeof loadData === 'function'){
+      loadData(true);
+      if(user.rol==='admin' && typeof checkVencimientosYNotificar==='function')
+        setTimeout(checkVencimientosYNotificar, 6000);
+    } else if(_tries < 30){
+      setTimeout(_tryLoad, 300);
+    } else {
+      // Timeout — ocultar spinner y continuar sin datos remotos
+      document.getElementById('loading').className='';
+      if(typeof fromSeed==='function' && typeof buildFilters==='function'){
+        DATA = fromSeed();
+        buildFilters();
+        applyFilters();
+        setBadge('local','Datos guardados');
+      }
+    }
+  }
+  setTimeout(_tryLoad, 300);
+}
+
+function doLogout(){
+  if(window.DASH_SESSION_START){
+    var mins=Math.round((Date.now()-window.DASH_SESSION_START.getTime())/60000);
+    try{
+      var log=JSON.parse(localStorage.getItem(AKEY)||'[]');
+      if(log.length>0&&log[0].email===window.DASH_USER.email&&!log[0].duracion){
+        log[0].duracion=mins+'min'; localStorage.setItem(AKEY,JSON.stringify(log));
+      }
+    }catch(e){}
+  }
+  window.DASH_USER=null; window.DASH_SESSION_START=null;
+  if(typeof CURRENT_USER!=='undefined') CURRENT_USER=null;
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('user-pill').style.display='none';
+  document.getElementById('logout-btn').style.display='none';
+  document.querySelectorAll('.admin-only').forEach(function(el){el.style.display='none';});
+  document.getElementById('li-pass').value='';
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('page-resumen').classList.add('active');
+  var tabs=document.querySelectorAll('.tab');
+  tabs.forEach(function(t){t.classList.remove('active');});
+  if(tabs.length>0) tabs[0].classList.add('active');
+}
+
+function getLog(){try{return JSON.parse(localStorage.getItem(AKEY)||'[]');}catch(e){return[];}}
+function saveLog(l){localStorage.setItem(AKEY,JSON.stringify(l));}
+
+document.addEventListener('DOMContentLoaded',function(){
+  var pEl=document.getElementById('li-pass');
+  if(pEl) pEl.addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+  var eEl=document.getElementById('li-email');
+  if(eEl) eEl.addEventListener('keydown',function(e){if(e.key==='Enter')pEl&&pEl.focus();});
+  setTimeout(function(){var el=document.getElementById('li-email');if(el)el.focus();},200);
+});
+
+</script>
+</head>
+<body>
+
+<!-- ══ LOADING ══ -->
+<div id="loading" style="display:none!important">
+  <div class="spinner"></div>
+  <p class="lt">Portafolio NTF 2026</p>
+  <p class="lm" id="lm">Cargando datos...</p>
+</div>
+
+<!-- ══ LOGIN ══ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">NTF</div>
+    <div class="login-title">Portafolio NTF 2026</div>
+    <div class="login-sub">Ingresa tus credenciales para continuar</div>
+    <div class="login-field">
+      <label>Correo electrónico</label>
+      <input type="email" id="li-email" placeholder="usuario@sofgenpharma.com"/>
+    </div>
+    <div class="login-field">
+      <label>Contraseña</label>
+      <input type="password" id="li-pass" placeholder="••••••••"/>
+    </div>
+    <button class="login-btn" onclick="doLogin()">Ingresar</button>
+    <div class="login-error" id="li-err"></div>
+  </div>
+</div>
+
+<!-- ══ MODAL ══ -->
+<div id="overlay" onclick="if(event.target===this)closeModal()" style="position:fixed;inset:0;background:rgba(13,46,46,.45);z-index:600;display:none;align-items:flex-start;justify-content:center;padding-top:60px;backdrop-filter:blur(6px);">
+  <div id="modal" style="background:#fff;border:1px solid rgba(18,114,112,.25);border-radius:16px;width:90%;max-width:760px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px rgba(13,46,46,.25);">
+    <div class="mhdr">
+      <div style="display:flex;align-items:center;gap:7px;">
+        <span class="mtitle" id="mtitle">Detalle</span>
+        <span class="mcnt" id="mcnt"></span>
+      </div>
+      <button class="mclose" onclick="closeModal()">✕</button>
+    </div>
+    <div class="mbody" id="mbody"></div>
+  </div>
+</div>
+
+<!-- ══ ERROR ══ -->
+<div id="err-banner"></div>
+
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tl">
+    <div class="corp-logo">
+      <div class="corp-logo-icon">NTF</div>
+      <div class="logo-divider"></div>
+      <h1>Portafolio <span>NTF</span> 2026</h1>
+    </div>
+    <div class="live-badge live-loading" id="lbadge">
+      <div class="live-dot" style="background:var(--accent)"></div>
+      <span id="ltxt">Conectando...</span>
+    </div>
+    <span class="today-b" id="today"></span>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+    <div class="tabs" id="main-tabs">
+      <button class="tab active" onclick="showPage('resumen',this)">Resumen</button>
+      <button class="tab" onclick="showPage('semana',this)">Cronograma</button>
+      <button class="tab" onclick="showPage('tabla',this)">Actividades</button>
+      <button class="tab" onclick="showPage('avances',this)">% Avances</button>
+      <button class="tab" onclick="showPage('misemana',this)">Mi Semana</button>
+      <button class="tab admin-only" onclick="showPage('accesos',this)" style="display:none">👁 Accesos</button>
+      <button class="tab admin-only" onclick="showPage('estadisticas',this)" style="display:none">📊 Estadísticas</button>
+    </div>
+    <div id="user-pill" style="display:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 12px 4px 6px;display:none;align-items:center;gap:7px;">
+      <div id="user-avatar" style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;">?</div>
+      <span id="user-name" style="font-size:10px;color:rgba(255,255,255,.9);font-weight:500;">—</span>
+      <span id="user-role-badge" style="font-size:8px;padding:1px 6px;border-radius:10px;background:rgba(255,255,255,.2);color:#fff;font-weight:700;">USER</span>
+    </div>
+    <button class="refresh-btn" id="rbtn" onclick="if(window.DASH_USER)loadData(true)">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+      Actualizar
+    </button>
+    <button onclick="doLogout()" style="display:none;font-size:10px;padding:4px 9px;border-radius:5px;background:rgba(192,64,78,.2);border:1px solid rgba(192,64,78,.3);color:#ffaaaa;cursor:pointer;" id="logout-btn">Salir</button>
+  </div>
+</div>
+
+
+<!-- FILTERS -->
+<div class="filters">
+  <div class="fg"><span class="fl">Proyecto</span>
+    <select id="fp" onchange="applyFilters()"><option value="">Todos los proyectos</option></select>
+  </div>
+  <div class="fg"><span class="fl">Progreso</span>
+    <select id="fe" onchange="applyFilters()">
+      <option value="">Todos</option>
+      <option value="Completado">Completado</option>
+      <option value="En curso">En curso</option>
+      <option value="Pendiente">Pendiente</option>
+      <option value="No iniciado">No iniciado</option>
+      <option value="Vencido">Vencido</option>
+    </select>
+  </div>
+  <div class="fg"><span class="fl">Prioridad</span>
+    <select id="fs" onchange="applyFilters()">
+      <option value="">Todas</option>
+      <option value="Crítico">Crítica</option>
+      <option value="Alto">Alta</option>
+      <option value="Media">Media</option>
+      <option value="Baja">Baja</option>
+    </select>
+  </div>
+  <div class="fg"><span class="fl">Actividad (Fase)</span>
+    <select id="ff" onchange="applyFilters()"><option value="">Todas</option></select>
+  </div>
+  <div class="fg"><span class="fl">Trimestre</span>
+    <select id="fq" onchange="applyFilters()">
+      <option value="">Todos</option>
+      <option value="Q1">Q1 (Ene–Mar)</option>
+      <option value="Q2">Q2 (Abr–Jun)</option>
+      <option value="Q3">Q3 (Jul–Sep)</option>
+      <option value="Q4">Q4 (Oct–Dic)</option>
+    </select>
+  </div>
+  <button class="clear-btn" onclick="clearFilters()">✕ Limpiar</button>
+  <span class="upd-txt" id="upd"></span>
+</div>
+
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+
+  <!-- RESUMEN -->
+  <div class="page active" id="page-resumen">
+    <div class="kpi-grid" id="kpis"></div>
+    <div class="row2">
+      <div class="card">
+        <div class="ctitle">Progreso por proyecto <small>(mayor a menor · clic para detalle)</small></div>
+        <div class="pbars" id="bars"></div>
+        <div class="leg-row">
+          <span class="leg-item"><span class="leg-box" style="background:#0f8a80;opacity:.9"></span>Completado</span>
+          <span class="leg-item"><span class="leg-box" style="background:#2bbfbc;opacity:.5"></span>En curso</span>
+          <span class="leg-item"><span class="leg-box" style="background:#c0404e;opacity:.65"></span>Vencido</span>
+          <span class="leg-item"><span class="leg-box" style="background:rgba(18,114,112,.1)"></span>Pendiente</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ctitle">Alta &amp; Crítica por trimestre <small>(clic en barra para detalle)</small></div>
+        <div class="chart-wrap" style="height:215px;">
+          <canvas id="cTrim" role="img" aria-label="Cumplimiento trimestral actividades prioridad alta y crítica"></canvas>
+        </div>
+        <div class="leg-row" id="legTrim"></div>
+      </div>
+    </div>
+
+    <!-- Gráfica semanal -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="ctitle">Seguimiento semanal — Programado vs Completado <small>(clic en cualquier barra para ver las actividades de esa semana)</small></div>
+      <div class="chart-wrap" style="height:240px;">
+        <canvas id="cSem" role="img" aria-label="Seguimiento semanal actividades programadas versus completadas"></canvas>
+      </div>
+      <div class="leg-row" id="legSem"></div>
+    </div>
+  </div>
+
+  <!-- CRONOGRAMA -->
+  <div class="page" id="page-semana">
+    <div class="card">
+      <div class="ctitle">Actividades por semana — próximas 10 semanas <small>(clic en celda para detalle)</small></div>
+      <div class="ss"><table class="st" id="stbl"></table></div>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="page" id="page-tabla">
+    <div class="tsec">
+      <div class="thdr">
+        <h3>Actividades — ordenadas por urgencia</h3>
+        <span style="font-size:10px;color:var(--muted)" id="tct"></span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="at">
+          <thead><tr>
+            <th onclick="srt('titulo')">Actividad</th>
+            <th onclick="srt('proyecto')">Proyecto</th>
+            <th onclick="srt('asignado')">Asignado a</th>
+            <th onclick="srt('fase')">Fase</th>
+            <th onclick="srt('estado')">Progreso</th>
+            <th onclick="srt('prioridad')">Prioridad</th>
+            <th onclick="srt('pctAvance')" style="text-align:center;">% Avance</th>
+            <th onclick="srt('vencimiento')">Vencimiento</th>
+            <th onclick="srt('dias')">Días rest.</th>
+            <th onclick="srt('sem')">Semáforo</th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- AVANCES -->
+  <div class="page" id="page-avances">
+    <div class="tsec">
+      <div class="thdr" style="flex-wrap:wrap;gap:10px;">
+        <h3>Porcentajes de avance por actividad</h3>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div class="fg"><span class="fl">Filtrar por proyecto</span>
+            <select id="fa-proy" onchange="renderAvances()" style="min-width:160px;"></select>
+          </div>
+          <span style="font-size:10px;color:var(--muted)" id="av-count"></span>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="at" id="av-table">
+          <thead><tr>
+            <th onclick="srtAv('titulo')" style="min-width:200px;">Actividad</th>
+            <th onclick="srtAv('proyecto')">Proyecto</th>
+            <th onclick="srtAv('asignado')">Asignado a</th>
+            <th onclick="srtAv('pctTeorico')" style="text-align:center;min-width:130px;">% Teórico</th>
+            <th onclick="srtAv('pctAvance')" style="text-align:center;min-width:130px;">% Avance</th>
+            <th onclick="srtAv('pctReal')" style="text-align:center;min-width:130px;">% Avance Real</th>
+            <th style="text-align:center;min-width:110px;">Desviación</th>
+          </tr></thead>
+          <tbody id="av-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ACCESOS (solo admin) ══════════════════════════════ -->
+  <div class="page" id="page-accesos">
+    <div class="card" style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;">👁 Registro de Accesos</div>
+          <div style="font-size:10px;color:var(--muted);">Historial completo de ingresos al dashboard</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="fg">
+            <span class="fl">Filtrar usuario</span>
+            <select id="acc-filter" onchange="renderAccesos()" style="min-width:180px;"></select>
+          </div>
+          <button onclick="clearAccessLog()" style="font-size:10px;padding:5px 11px;border-radius:5px;background:none;border:1px solid rgba(192,64,78,.2);color:#c0404e;cursor:pointer;">🗑 Limpiar log</button>
+        </div>
+      </div>
+      <!-- Stats rápidas -->
+      <div class="admin-grid" id="acc-stats"></div>
+      <!-- Tabla -->
+      <div class="tsec">
+        <div class="thdr"><h3>Historial de accesos</h3><span style="font-size:10px;color:var(--muted)" id="acc-count"></span></div>
+        <div style="overflow-x:auto;max-height:420px;overflow-y:auto;">
+          <table class="access-table">
+            <thead><tr>
+              <th>Usuario</th><th>Correo</th><th>Rol</th>
+              <th>Fecha</th><th>Hora de ingreso</th><th>Duración</th>
+              <th>Notificación</th>
+            </tr></thead>
+            <tbody id="acc-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ESTADÍSTICAS DE USO (solo admin) ════════════════════ -->
+  <div class="page" id="page-estadisticas">
+    <div class="card" style="margin-bottom:14px;">
+      <div style="margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;">📊 Estadísticas de Uso</div>
+        <div style="font-size:10px;color:var(--muted);">Análisis de actividad por usuario del dashboard</div>
+      </div>
+      <!-- KPIs globales uso -->
+      <div class="admin-grid" id="uso-stats" style="margin-bottom:16px;"></div>
+      <!-- Gráfica barras por usuario -->
+      <div class="row2">
+        <div class="card" style="box-shadow:none;border:1px solid var(--border);">
+          <div class="ctitle">Accesos por usuario</div>
+          <div style="height:220px;"><canvas id="chart-uso-usuarios"></canvas></div>
+        </div>
+        <div class="card" style="box-shadow:none;border:1px solid var(--border);">
+          <div class="ctitle">Accesos por día (últimos 14 días)</div>
+          <div style="height:220px;"><canvas id="chart-uso-dias"></canvas></div>
+        </div>
+      </div>
+      <!-- Tabla resumen por usuario -->
+      <div class="tsec" style="margin-top:14px;">
+        <div class="thdr"><h3>Resumen por usuario</h3></div>
+        <div style="overflow-x:auto;">
+          <table class="access-table">
+            <thead><tr>
+              <th>Usuario</th><th>Correo</th><th>Rol</th>
+              <th style="text-align:center;">Total accesos</th>
+              <th style="text-align:center;">Último acceso</th>
+              <th style="text-align:center;">Tiempo total</th>
+              <th style="text-align:center;">Notificar</th>
+            </tr></thead>
+            <tbody id="uso-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+  <!-- MI SEMANA -->
+  <div class="page" id="page-misemana">
+    <div class="card" style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px;">📅 Vencimientos por semana</div>
+          <div style="font-size:10px;color:var(--muted)" id="ms-rango"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div class="fg"><span class="fl">Persona</span>
+            <select id="ms-persona" onchange="renderMiSemana()" style="min-width:200px;"></select>
+          </div>
+          <div class="fg"><span class="fl">Semana</span>
+            <select id="ms-semana" onchange="renderMiSemana()" style="min-width:190px;"></select>
+          </div>
+          <span style="font-size:10px;color:var(--muted)" id="ms-count"></span>
+        </div>
+      </div>
+      <div id="ms-empty" style="text-align:center;padding:40px;color:var(--muted);font-size:12px;">👆 Selecciona una persona para ver sus vencimientos.</div>
+      <div id="ms-dias"></div>
+    </div>
+  </div>
+
+
+<!-- ══ ACCESOS (solo admin) ══════════════════════════════ -->
+  <div class="page" id="page-accesos">
+    <div class="card" style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;">👁 Registro de Accesos</div>
+          <div style="font-size:10px;color:var(--muted);">Historial completo de ingresos al dashboard</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="fg">
+            <span class="fl">Filtrar usuario</span>
+            <select id="acc-filter" onchange="renderAccesos()" style="min-width:180px;"></select>
+          </div>
+          <button onclick="clearAccessLog()" style="font-size:10px;padding:5px 11px;border-radius:5px;background:none;border:1px solid rgba(192,64,78,.2);color:#c0404e;cursor:pointer;">🗑 Limpiar log</button>
+        </div>
+      </div>
+      <!-- Stats rápidas -->
+      <div class="admin-grid" id="acc-stats"></div>
+      <!-- Tabla -->
+      <div class="tsec">
+        <div class="thdr"><h3>Historial de accesos</h3><span style="font-size:10px;color:var(--muted)" id="acc-count"></span></div>
+        <div style="overflow-x:auto;max-height:420px;overflow-y:auto;">
+          <table class="access-table">
+            <thead><tr>
+              <th>Usuario</th><th>Correo</th><th>Rol</th>
+              <th>Fecha</th><th>Hora de ingreso</th><th>Duración</th>
+              <th>Notificación</th>
+            </tr></thead>
+            <tbody id="acc-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ESTADÍSTICAS DE USO (solo admin) ════════════════════ -->
+  <div class="page" id="page-estadisticas">
+    <div class="card" style="margin-bottom:14px;">
+      <div style="margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;">📊 Estadísticas de Uso</div>
+        <div style="font-size:10px;color:var(--muted);">Análisis de actividad por usuario del dashboard</div>
+      </div>
+      <!-- KPIs globales uso -->
+      <div class="admin-grid" id="uso-stats" style="margin-bottom:16px;"></div>
+      <!-- Gráfica barras por usuario -->
+      <div class="row2">
+        <div class="card" style="box-shadow:none;border:1px solid var(--border);">
+          <div class="ctitle">Accesos por usuario</div>
+          <div style="height:220px;"><canvas id="chart-uso-usuarios"></canvas></div>
+        </div>
+        <div class="card" style="box-shadow:none;border:1px solid var(--border);">
+          <div class="ctitle">Accesos por día (últimos 14 días)</div>
+          <div style="height:220px;"><canvas id="chart-uso-dias"></canvas></div>
+        </div>
+      </div>
+      <!-- Tabla resumen por usuario -->
+      <div class="tsec" style="margin-top:14px;">
+        <div class="thdr"><h3>Resumen por usuario</h3></div>
+        <div style="overflow-x:auto;">
+          <table class="access-table">
+            <thead><tr>
+              <th>Usuario</th><th>Correo</th><th>Rol</th>
+              <th style="text-align:center;">Total accesos</th>
+              <th style="text-align:center;">Último acceso</th>
+              <th style="text-align:center;">Tiempo total</th>
+              <th style="text-align:center;">Notificar</th>
+            </tr></thead>
+            <tbody id="uso-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+</div><!-- /main -->
+
+
+<script>
+
+// ════════════════════════════════════════════════════════
+// SISTEMA DE AUTENTICACIÓN Y CONTROL DE ACCESOS
+// (doLogin definido en script inline arriba del HTML)
+// ════════════════════════════════════════════════════════
+const USERS = window._USERS || [];
+
+// ─── SESIÓN ───────────────────────────────────────────────
+// Nota: CURRENT_USER se sincroniza desde el script inline del login
+let CURRENT_USER = null;
+let SESSION_START = null;
+let chartUsoU = null, chartUsoD = null;
+
+const ACCESS_KEY = 'ntf_access_log';
+function getLog(){ try{ return JSON.parse(localStorage.getItem(ACCESS_KEY)||'[]'); }catch(e){ return []; } }
+function saveLog(log){ localStorage.setItem(ACCESS_KEY, JSON.stringify(log)); }
+
+function doLogout(){
+  // Calcular duración
+  if(SESSION_START){
+    const mins = Math.round((Date.now()-SESSION_START.getTime())/60000);
+    const log = getLog();
+    if(log.length>0 && log[0].email===CURRENT_USER.email && !log[0].duracion){
+      log[0].duracion = mins+'min';
+      saveLog(log);
+    }
+  }
+  CURRENT_USER = null; SESSION_START = null;
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('user-pill').style.display='none';
+  document.getElementById('logout-btn').style.display='none';
+  document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');
+  document.getElementById('li-pass').value='';
+  // Volver a resumen
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-resumen').classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector('.tab').classList.add('active');
+}
+
+// ─── RENDER ACCESOS ───────────────────────────────────────
+function renderAccesos(){
+  const log = getLog();
+  const filterEmail = document.getElementById('acc-filter')?.value||'';
+
+  // Poblar filtro
+  const sel=document.getElementById('acc-filter');
+  if(sel && sel.options.length<=1){
+    const emails=[...new Set(log.map(l=>l.email))];
+    emails.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=log.find(l=>l.email===e)?.nombre||e;sel.appendChild(o);});
+  }
+
+  const rows = filterEmail ? log.filter(l=>l.email===filterEmail) : log;
+  document.getElementById('acc-count').textContent = rows.length+' registros';
+
+  // Stats rápidas
+  const totalAccesos = log.length;
+  const hoy = new Date().toLocaleDateString('es-CO');
+  const accHoy = log.filter(l=>l.fecha===hoy).length;
+  const usuariosActivos = [...new Set(log.map(l=>l.email))].length;
+  document.getElementById('acc-stats').innerHTML=`
+    <div class="stat-card"><div class="sv">${totalAccesos}</div><div class="sl">Total accesos</div></div>
+    <div class="stat-card"><div class="sv" style="color:#1a9896">${accHoy}</div><div class="sl">Accesos hoy</div></div>
+    <div class="stat-card"><div class="sv" style="color:#c07800">${usuariosActivos}</div><div class="sl">Usuarios activos</div></div>`;
+
+  // Tabla
+  const tbody=document.getElementById('acc-tbody');
+  if(!rows.length){ tbody.innerHTML='<tr><td colspan="7" class="empty">Sin registros de acceso.</td></tr>'; return; }
+  tbody.innerHTML=rows.map((r,i)=>`
+    <tr>
+      <td style="font-weight:500">${r.nombre}</td>
+      <td style="font-size:10px;color:var(--muted)">${r.email}</td>
+      <td><span class="${r.rol==='admin'?'role-admin':'role-user'}">${r.rol==='admin'?'Admin':'Usuario'}</span></td>
+      <td style="font-size:11px">${r.fecha}</td>
+      <td style="font-size:11px;font-weight:600;color:#127270">${r.hora}</td>
+      <td style="font-size:11px;color:var(--muted)">${r.duracion||'—'}</td>
+      <td><button class="notif-btn" onclick="enviarNotifAcceso('${r.email}','${r.nombre}','${r.hora}','${r.fecha}')">✉ Notificar</button></td>
+    </tr>`).join('');
+}
+
+function clearAccessLog(){
+  if(!confirm('¿Eliminar todo el historial de accesos?')) return;
+  localStorage.removeItem(ACCESS_KEY);
+  renderAccesos();
+}
+
+// ─── RENDER ESTADÍSTICAS ──────────────────────────────────
+function renderEstadisticas(){
+  const log = getLog();
+  if(!log.length){
+    document.getElementById('uso-stats').innerHTML='<div class="stat-card" style="grid-column:1/-1"><div class="sl">Sin datos de uso aún.</div></div>';
+    document.getElementById('uso-tbody').innerHTML='<tr><td colspan="7" class="empty">Sin datos.</td></tr>';
+    return;
+  }
+
+  // KPIs
+  const totalAcc=log.length, usuarios=[...new Set(log.map(l=>l.email))];
+  const hoy=new Date().toLocaleDateString('es-CO');
+  const accHoy=log.filter(l=>l.fecha===hoy).length;
+  document.getElementById('uso-stats').innerHTML=`
+    <div class="stat-card"><div class="sv">${totalAcc}</div><div class="sl">Total sesiones</div></div>
+    <div class="stat-card"><div class="sv" style="color:#1a9896">${usuarios.length}</div><div class="sl">Usuarios únicos</div></div>
+    <div class="stat-card"><div class="sv" style="color:#c07800">${accHoy}</div><div class="sl">Sesiones hoy</div></div>`;
+
+  // Gráfica por usuario
+  const countByUser={};
+  log.forEach(l=>{ countByUser[l.nombre]=(countByUser[l.nombre]||0)+1; });
+  if(chartUsoU) chartUsoU.destroy();
+  chartUsoU=new Chart(document.getElementById('chart-uso-usuarios').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:Object.keys(countByUser),
+      datasets:[{data:Object.values(countByUser),backgroundColor:'rgba(18,114,112,.65)',borderRadius:4,borderSkipped:false}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#fff',borderColor:'rgba(18,114,112,.2)',borderWidth:1,titleColor:'#0d2e2e',bodyColor:'#4a8080'}},
+      scales:{x:{ticks:{color:'#4a8080',font:{size:9},maxRotation:20},grid:{display:false},border:{color:'rgba(18,114,112,.1)'}},
+              y:{ticks:{color:'#4a8080',font:{size:9},stepSize:1},grid:{color:'rgba(18,114,112,.05)'},border:{color:'rgba(18,114,112,.1)'},beginAtZero:true}}}
+  });
+
+  // Gráfica por día (últimos 14 días)
+  const dias=[];
+  for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);dias.push(d.toLocaleDateString('es-CO'));}
+  const countByDia={};dias.forEach(d=>countByDia[d]=0);
+  log.forEach(l=>{if(countByDia[l.fecha]!==undefined) countByDia[l.fecha]++;});
+  if(chartUsoD) chartUsoD.destroy();
+  chartUsoD=new Chart(document.getElementById('chart-uso-dias').getContext('2d'),{
+    type:'line',
+    data:{
+      labels:dias.map(d=>{ const p=d.split('/'); return p[0]+'/'+p[1]; }),
+      datasets:[{data:Object.values(countByDia),borderColor:'#1a9896',backgroundColor:'rgba(26,152,150,.08)',pointBackgroundColor:'#1a9896',tension:.4,fill:true,pointRadius:3}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#fff',borderColor:'rgba(18,114,112,.2)',borderWidth:1,titleColor:'#0d2e2e',bodyColor:'#4a8080'}},
+      scales:{x:{ticks:{color:'#4a8080',font:{size:9}},grid:{display:false},border:{color:'rgba(18,114,112,.1)'}},
+              y:{ticks:{color:'#4a8080',font:{size:9},stepSize:1},grid:{color:'rgba(18,114,112,.05)'},border:{color:'rgba(18,114,112,.1)'},beginAtZero:true}}}
+  });
+
+  // Tabla resumen por usuario
+  const byUser={};
+  log.forEach(l=>{
+    if(!byUser[l.email]) byUser[l.email]={nombre:l.nombre,email:l.email,rol:l.rol,count:0,ultimo:l.ts||0,minsTot:0};
+    byUser[l.email].count++;
+    if((l.ts||0)>byUser[l.email].ultimo) byUser[l.email].ultimo=l.ts||0;
+    byUser[l.email].minsTot+=(parseInt(l.duracion)||0);
+  });
+  document.getElementById('uso-tbody').innerHTML=Object.values(byUser)
+    .sort((a,b)=>b.count-a.count)
+    .map(u=>`<tr>
+      <td style="font-weight:500">${u.nombre}</td>
+      <td style="font-size:10px;color:var(--muted)">${u.email}</td>
+      <td><span class="${u.rol==='admin'?'role-admin':'role-user'}">${u.rol==='admin'?'Admin':'Usuario'}</span></td>
+      <td style="text-align:center;font-weight:700;color:#127270">${u.count}</td>
+      <td style="text-align:center;font-size:10px">${u.ultimo?new Date(u.ultimo).toLocaleString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'—'}</td>
+      <td style="text-align:center;font-size:10px;color:var(--muted)">${u.minsTot?u.minsTot+'min':'—'}</td>
+      <td style="text-align:center;"><button class="notif-btn" onclick="enviarNotifPersonal('${u.email}','${u.nombre}')">✉ Enviar</button></td>
+    </tr>`).join('');
+}
+
+// ─── NOTIFICACIONES ───────────────────────────────────────
+// Notificación automática: actividades por vencer (≤7 días) por usuario
+function checkVencimientosYNotificar(){
+  if(!DATA.length) return;
+  // Agrupar por asignado
+  const porAsignado={};
+  DATA.forEach(d=>{
+    if(d.estado==='Completado'||!d.vencimiento) return;
+    const dias=d.dias;
+    if(dias===null||dias<0||dias>7) return; // solo próximos 7 días
+    const user=USERS.find(u=>u.nombre.split(' ').some(p=>d.asignado.toLowerCase().includes(p.toLowerCase())));
+    if(!user) return;
+    if(!porAsignado[user.email]) porAsignado[user.email]={user,actividades:[]};
+    porAsignado[user.email].actividades.push(d);
+  });
+  // Abrir mailto para cada usuario con actividades
+  Object.values(porAsignado).forEach(({user,actividades})=>{
+    const lista=actividades.map(a=>`• ${a.titulo} — vence el ${a.vencimiento.toLocaleDateString('es-CO')} (${a.dias===0?'HOY':'+'+a.dias+' días'})`).join('\n');
+    const asunto=`[NTF 2026] Tienes ${actividades.length} actividad${actividades.length>1?'es':''} por vencer esta semana`;
+    const cuerpo=`Hola ${user.nombre.split(' ')[0]},\n\nEste es un recordatorio automático del Dashboard Portafolio NTF 2026.\n\nActividades próximas a vencer:\n\n${lista}\n\nPor favor revisa el estado de tus actividades.\n\nSaludos,\nAdministración NTF`;
+    // Crear enlace mailto y abrirlo
+    const link=document.createElement('a');
+    link.href=`mailto:${user.email}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+    link.style.display='none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+  if(Object.keys(porAsignado).length>0){
+    showToast(`📧 Se prepararon notificaciones para ${Object.keys(porAsignado).length} usuario(s) con actividades por vencer.`);
+  }else{
+    showToast('✅ Sin actividades críticas por notificar en este momento.');
+  }
+}
+
+function enviarNotifAcceso(email,nombre,hora,fecha){
+  const asunto=`[NTF 2026] Acceso registrado — ${fecha} ${hora}`;
+  const cuerpo=`Hola ${nombre.split(' ')[0]},\n\nSe ha registrado un acceso a tu cuenta en el Dashboard Portafolio NTF 2026.\n\nFecha: ${fecha}\nHora: ${hora}\n\nSi no fuiste tú, contacta al administrador.\n\nSaludos,\nAdministración NTF`;
+  window.open(`mailto:${email}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`);
+}
+
+function enviarNotifPersonal(email,nombre){
+  if(!DATA.length){ showToast('Carga los datos primero.'); return; }
+  const user=USERS.find(u=>u.email===email);
+  const actividades=DATA.filter(d=>{
+    if(d.estado==='Completado'||!d.vencimiento) return false;
+    const dias=d.dias; if(dias===null||dias<0||dias>14) return false;
+    if(!user) return false;
+    return user.nombre.split(' ').some(p=>d.asignado.toLowerCase().includes(p.toLowerCase()));
+  });
+  const lista=actividades.length
+    ? actividades.map(a=>`• ${a.titulo} — ${a.dias===0?'vence HOY':'+'+a.dias+' días'}`).join('\n')
+    : 'No tienes actividades urgentes en este momento.';
+  const asunto=`[NTF 2026] Resumen de tus actividades`;
+  const cuerpo=`Hola ${nombre.split(' ')[0]},\n\nAquí tu resumen de actividades próximas a vencer (próximos 14 días):\n\n${lista}\n\nIngresa al dashboard para más detalles.\n\nSaludos,\nAdministración NTF`;
+  window.open(`mailto:${email}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`);
+}
+
+// ─── TOAST ────────────────────────────────────────────────
+function showToast(msg){
+  let t=document.getElementById('ntf-toast');
+  if(!t){
+    t=document.createElement('div');t.id='ntf-toast';
+    t.style.cssText='position:fixed;bottom:24px;right:24px;background:#0d4f4e;color:#e4f0f0;padding:12px 18px;border-radius:10px;font-size:11px;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);max-width:340px;line-height:1.4;border:1px solid rgba(43,191,188,.3);transition:opacity .3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg; t.style.opacity='1';
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>{ t.style.opacity='0'; },5000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// FUENTE DE DATOS — Google Apps Script (proxy personal)
+// URL fija — siempre conecta sin configuración adicional
+// ════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════
+// FUENTE DE DATOS — Google Apps Script (proxy personal)
+// URL fija — siempre conecta sin configuración adicional
+// ════════════════════════════════════════════════════════
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbywnn0Iv7FE14wWyZs-TenIxYMSrj5JgQuaAXTGNPB6lF1c7NGneP9jl2HjxuTo2xLGbw/exec';
+
+// Fallback: proxies públicos apuntando al CSV original
+const CSV_DIRECT = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrnWAijWSlKPssfLNXXPJ1GbIjf7he2ioeYluk_s8zGGszZtf6FsL0v7slca8Kjo5NttjolPjC2cyW/pub?output=csv&gid=0';
+const PROXIES = [
+  u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+];
+
+// ─── STATE ────────────────────────────────────────────────
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+document.getElementById('today').textContent = TODAY.toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+let DATA = [], filtered = [], sk = 'dias', sd = 1;
+let chartTrim = null, chartSem = null;
+let semWeeks = [], semDataMap = {};
+
+const PC = {
+  'Mariana - MCD':'#127270','SEMA - PMA':'#1a9896','Aura - CCMA':'#0d6664',
+  'ERICA v2':'#2bbfbc','TALIA':'#c07800','APRIL':'#c0404e',
+  'SARA':'#5a9a98','EPHI':'#0d4f4e','NORA':'#4db8b6'
+};
+const EC = {
+  'Completado':'#0f8a80','En curso':'#1a9896','Pendiente':'#c07800',
+  'No iniciado':'#7aabab','En Programación':'#127270','Vencido':'#c0404e'
+};
+
+// ─── HELPERS ──────────────────────────────────────────────
+const pd = s => { if(!s||!s.trim())return null; const d=new Date(s.trim()+'T00:00:00'); return isNaN(d)?null:d; };
+const dd = d => d ? Math.round((d-TODAY)/86400000) : null;
+const getQ = d => { if(!d)return null; const m=d.getMonth(); return m<3?'Q1':m<6?'Q2':m<9?'Q3':'Q4'; };
+const getMon = d => { const t=new Date(d); t.setHours(0,0,0,0); const dy=t.getDay(); t.setDate(t.getDate()-dy+(dy===0?-6:1)); return t; };
+const wKey = d => d ? getMon(d).toISOString().slice(0,10) : null;
+const wLabel = s => new Date(s+'T00:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short'});
+const wLabelFull = s => { const d=new Date(s+'T00:00:00'),e=new Date(d); e.setDate(d.getDate()+6); return d.toLocaleDateString('es-CO',{day:'2-digit',month:'short'})+' – '+e.toLocaleDateString('es-CO',{day:'2-digit',month:'short'}); };
+const calcSem = (e,v) => { if(e==='Completado')return'Completado'; if(!v)return'Sin fecha'; const d=dd(v); if(d<0)return'Vencido'; if(d<=3)return'Crítico'; if(d<=7)return'Próximo'; return'En tiempo'; };
+const getProgreso = (e,v) => { if(e==='Completado')return'Completado'; if(v&&dd(v)<0)return'Vencido'; return e; };
+const sp = s => ({Vencido:0,Crítico:1,Próximo:2,'En tiempo':3,'Sin fecha':4,Completado:5}[s]??6);
+
+function cleanPct(v){ return v && v.trim() ? v.trim().replace('%','').trim() : ''; }
+function mkRow(titulo,fase,estado,prioridad,proyecto,asignado,vencStr,pctRaw,pctTeoRaw,pctRealRaw){
+  const venc = pd(vencStr);
+  return { titulo, fase, estado, prioridad, proyecto,
+    asignado: asignado&&asignado.trim() ? asignado.trim() : '—',
+    vencimiento: venc, dias: dd(venc),
+    sem: calcSem(estado,venc), progreso: getProgreso(estado,venc), trimestre: getQ(venc),
+    pctAvance: cleanPct(pctRaw),
+    pctTeorico: cleanPct(pctTeoRaw),
+    pctReal: cleanPct(pctRealRaw) };
+}
+
+// ─── CSV PARSER ───────────────────────────────────────────
+function csvSplit(l){
+  const r=[]; let c='',q=false;
+  for(let i=0;i<l.length;i++){
+    if(l[i]==='"') q=!q;
+    else if(l[i]===','&&!q){ r.push(c); c=''; }
+    else c+=l[i];
+  }
+  r.push(c); return r;
+}
+function parseCSV(txt){
+  const lines = txt.trim().split('\n');
+  const hdr = csvSplit(lines[0]).map(h=>h.trim().replace(/^"|"$/g,''));
+  return lines.slice(1)
+    .map(l=>{ const v=csvSplit(l).map(x=>x.trim().replace(/^"|"$/g,'')); const o={}; hdr.forEach((h,i)=>o[h]=v[i]||''); return o; })
+    .filter(r=>r['Título']&&r['Título'].trim()&&r['Proyectos']&&r['Proyectos'].trim());
+}
+
+// ─── DATOS SEED (última lectura real del Google Sheet) ─────
+const SEED_ROWS = [
+["Arquitectura de solución (alto nivel)","Diseño","No iniciado","Crítico","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Arquitectura LangGraph (estado, nodos, tools)","Diseño","No iniciado","Crítico","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Diseño repo + convenciones + estructura de config","Diseño","No iniciado","Baja","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Compatibilidad de dependencias + entorno reproducible","Desarrollo e Ingeniería","No iniciado","Media","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Desarrollo de FrontEnd","Desarrollo e Ingeniería","No iniciado","Crítico","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Implementación core (Python) + flujo principal","Desarrollo e Ingeniería","No iniciado","Alto","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Implementación conectores (datos) + parsing","Desarrollo e Ingeniería","No iniciado","Alto","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Renderizado documentos (docx/xlsx)","Desarrollo e Ingeniería","No iniciado","Crítico","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["App Azure (registro + permisos) + secrets","Despliegue","No iniciado","Alto","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Despliegue a Azure (infra + release) + rollback","Despliegue","No iniciado","Media","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Integración PowerAutomate (trigger/flow)","Despliegue","No iniciado","Alto","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Front de consumo (PowerApps/Teams/SharePoint)","Despliegue","No iniciado","Alto","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Plan de evaluación + Conjunto de Datos Ideal","Pruebas/Validación","No iniciado","Media","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Evaluación con Conjunto de Datos Ideal + Go/No-Go","Pruebas/Validación","No iniciado","Baja","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Pruebas unitarias + integración (local)","Pruebas/Validación","No iniciado","Crítico","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Soporte e incidentes","Operación/Impacto","No iniciado","Baja","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["SOP de operación + onboarding","Operación/Impacto","No iniciado","Baja","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Cierre MVP + lecciones aprendidas","Planeación","No iniciado","Baja","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Observabilidad (dashboard + alertas)","Operación/Impacto","No iniciado","Media","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Seguimiento ex-post mensual (KPIs + ROI)","Operación/Impacto","No iniciado","Crítico","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Inventario de datos/artefactos + permisos","Investigación","No iniciado","Alto","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["URS + criterios de aceptación (AC)","Requerimientos","No iniciado","Crítico","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["AS-IS del proceso + pain points","Investigación","No iniciado","Alto","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Kickoff, canales de trabajo, RACI","Inicio","No iniciado","Crítico","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["AS-IS del proceso + pain points","Investigación","Completado","Alto","Mariana - MCD","Alberto Carlos Espinosa Garavito","2025-12-02","2025-12-11","2025-12-11","100","100"],
+["Inventario de datos/artefactos + permisos","Investigación","Completado","Alto","Mariana - MCD","Alberto Carlos Espinosa Garavito","2026-01-06","2026-01-12","2026-01-13","100","100"],
+["URS + criterios de aceptación (AC)","Requerimientos","Completado","Crítico","Mariana - MCD","Alberto Carlos Espinosa Garavito","2025-12-09","2025-12-15","2025-12-15","100","100"],
+["App Azure (registro + permisos) + secrets","Despliegue","Completado","Alto","Mariana - MCD","Alberto Carlos Espinosa Garavito","2026-02-16","2026-04-15","2026-04-24","100","100"],
+["Despliegue a Azure (infra + release) + rollback","Despliegue","Pendiente","Media","Mariana - MCD","Alberto Carlos Espinosa Garavito","2026-02-21","","2026-05-09","100","0"],
+["Soporte e incidentes","Operación/Impacto","En Programación","Baja","Mariana - MCD","Alberto Carlos Espinosa Garavito","2026-03-02","","2026-05-15","100","0"],
+["Seguimiento ex-post mensual (KPIs + ROI)","Operación/Impacto","No iniciado","Crítico","Mariana - MCD","Alberto Carlos Espinosa Garavito","2026-03-02","","2026-06-30","100","0"],
+["Cierre MVP + lecciones aprendidas","Planeación","No iniciado","Baja","Mariana - MCD","Alberto Carlos Espinosa Garavito","2026-06-26","","2026-07-02","100","0"],
+["Kickoff, canales de trabajo, RACI","Inicio","Completado","Crítico","Mariana - MCD","Alberto Carlos Espinosa Garavito","2025-12-02","2025-12-05","2025-12-05","100","100"],
+["App Azure (registro + permisos) + secrets","Despliegue","Completado","Alto","SEMA - PMA","Alberto Carlos Espinosa Garavito","2026-01-19","2026-04-17","2026-02-20","100","100"],
+["Despliegue a Azure (infra + release) + rollback","Despliegue","Completado","Media","SEMA - PMA","Alberto Carlos Espinosa Garavito","2026-01-05","2026-04-17","2026-02-20","100","100"],
+["Kickoff, canales de trabajo, RACI","Inicio","Completado","Crítico","SEMA - PMA","Alberto Carlos Espinosa Garavito","2025-12-02","2025-12-05","2025-12-05","100","100"],
+["AS-IS del proceso + pain points","Investigación","Completado","Alto","SEMA - PMA","Alberto Carlos Espinosa Garavito","2025-12-16","2025-12-16","2026-01-23","100","100"],
+["Inventario de datos/artefactos + permisos","Investigación","Completado","Alto","SEMA - PMA","Alberto Carlos Espinosa Garavito","2025-12-16","2025-12-16","2025-12-19","100","100"],
+["Soporte e incidentes","Operación/Impacto","En curso","Baja","SEMA - PMA","Alberto Carlos Espinosa Garavito","2026-04-17","","2026-06-30","100","15"],
+["Seguimiento ex-post mensual (KPIs + ROI)","Operación/Impacto","En curso","Crítico","SEMA - PMA","Alberto Carlos Espinosa Garavito","2026-04-17","","2026-07-20","100","15"],
+["Cierre MVP + lecciones aprendidas","Planeación","No iniciado","Baja","SEMA - PMA","Alberto Carlos Espinosa Garavito","2026-07-13","","2026-07-25","100","0"],
+["URS + criterios de aceptación (AC)","Requerimientos","Completado","Crítico","SEMA - PMA","Alberto Carlos Espinosa Garavito","2025-12-11","2025-12-15","2025-12-15","100","100"],
+["App Azure (registro + permisos) + secrets","Despliegue","Completado","Alto","Aura - CCMA","Alberto Carlos Espinosa Garavito","2026-01-05","2026-01-13","2026-01-16","100","100"],
+["Despliegue a Azure (infra + release) + rollback","Despliegue","Pendiente","Media","Aura - CCMA","Alberto Carlos Espinosa Garavito","2026-01-19","","2026-02-20","100","0"],
+["Kickoff, canales de trabajo, RACI","Inicio","Completado","Crítico","Aura - CCMA","Alberto Carlos Espinosa Garavito","2025-12-01","2025-12-05","2025-12-05","100","100"],
+["AS-IS del proceso + pain points","Investigación","Completado","Alto","Aura - CCMA","Alberto Carlos Espinosa Garavito","2025-12-15","2025-12-19","2025-12-19","100","100"],
+["Inventario de datos/artefactos + permisos","Investigación","Completado","Alto","Aura - CCMA","Alberto Carlos Espinosa Garavito","2025-12-15","2025-12-18","2025-12-19","100","100"],
+["Soporte e incidentes","Operación/Impacto","En curso","Baja","Aura - CCMA","Alberto Carlos Espinosa Garavito","2026-02-23","","2026-05-22","100","0"],
+["Seguimiento ex-post mensual (KPIs + ROI)","Operación/Impacto","En curso","Crítico","Aura - CCMA","Alberto Carlos Espinosa Garavito","2026-02-23","","2026-05-22","100","0"],
+["Cierre MVP + lecciones aprendidas","Planeación","No iniciado","Baja","Aura - CCMA","Alberto Carlos Espinosa Garavito","2026-05-25","","2026-05-29","100","0"],
+["URS + criterios de aceptación (AC)","Requerimientos","Completado","Crítico","Aura - CCMA","Alberto Carlos Espinosa Garavito","2025-12-08","2025-12-15","2025-12-15","100","100"],
+["App Azure (registro + permisos) + secrets","Despliegue","Completado","Alto","ERICA v2","Alberto Carlos Espinosa Garavito","2026-03-26","2026-04-15","2026-04-24","100","100"],
+["Despliegue a Azure (infra + release) + rollback","Despliegue","Pendiente","Media","ERICA v2","Alberto Carlos Espinosa Garavito","2026-04-20","","2026-05-10","100","0"],
+["Kickoff, canales de trabajo, RACI","Inicio","Completado","Crítico","ERICA v2","Alberto Carlos Espinosa Garavito","2026-02-03","2026-02-09","2026-02-10","100","100"],
+["AS-IS del proceso + pain points","Investigación","Completado","Alto","ERICA v2","Alberto Carlos Espinosa Garavito","2026-01-27","2026-02-02","2026-02-03","100","100"],
+["Inventario de datos/artefactos + permisos","Investigación","Completado","Alto","ERICA v2","Alberto Carlos Espinosa Garavito","2026-01-27","2026-02-02","2026-02-03","100","100"],
+["Soporte e incidentes","Operación/Impacto","No iniciado","Baja","ERICA v2","Alberto Carlos Espinosa Garavito","2026-05-05","","2026-07-30","100","0"],
+["Seguimiento ex-post mensual (KPIs + ROI)","Operación/Impacto","No iniciado","Crítico","ERICA v2","Alberto Carlos Espinosa Garavito","2026-05-05","","2026-07-30","100","0"],
+["Cierre MVP + lecciones aprendidas","Planeación","No iniciado","Baja","ERICA v2","Alberto Carlos Espinosa Garavito","2026-07-30","","2026-08-03","100","0"],
+["URS + criterios de aceptación (AC)","Requerimientos","Completado","Crítico","ERICA v2","Alberto Carlos Espinosa Garavito","2026-01-27","2026-02-02","2026-02-03","100","100"],
+["App Azure (registro + permisos) + secrets","Despliegue","No iniciado","Alto","TALIA","Alberto Carlos Espinosa Garavito","2026-05-25","","2026-05-30","100","0"],
+["Despliegue a Azure (infra + release) + rollback","Despliegue","No iniciado","Media","TALIA","Alberto Carlos Espinosa Garavito","2026-05-29","","2026-06-05","100","0"],
+["Kickoff, canales de trabajo, RACI","Inicio","Completado","Crítico","TALIA","Alberto Carlos Espinosa Garavito","2026-02-05","2026-02-13","2026-02-14","100","100"],
+["AS-IS del proceso + pain points","Investigación","Completado","Alto","TALIA","Alberto Carlos Espinosa Garavito","2026-02-05","2026-02-13","2026-02-14","100","100"],
+["Inventario de datos/artefactos + permisos","Investigación","Completado","Alto","TALIA","Alberto Carlos Espinosa Garavito","2026-02-05","2026-02-17","2026-02-19","100","100"],
+["Soporte e incidentes","Operación/Impacto","No iniciado","Baja","TALIA","Alberto Carlos Espinosa Garavito","2026-06-05","","2026-08-24","100","0"],
+["Seguimiento ex-post mensual (KPIs + ROI)","Operación/Impacto","No iniciado","Crítico","TALIA","Alberto Carlos Espinosa Garavito","2026-06-05","","2026-08-24","100","0"],
+["Cierre MVP + lecciones aprendidas","Planeación","No iniciado","Baja","TALIA","Alberto Carlos Espinosa Garavito","2026-08-20","","2026-08-24","100","0"],
+["URS + criterios de aceptación (AC)","Requerimientos","Completado","Crítico","TALIA","Alberto Carlos Espinosa Garavito","2026-02-05","2026-02-14","2026-02-14","100","100"],
+["App Azure (registro + permisos) + secrets","Despliegue","Completado","Alto","APRIL","Alberto Carlos Espinosa Garavito","2026-04-10","2026-04-15","2026-04-24","100","100"],
+["Despliegue a Azure (infra + release) + rollback","Despliegue","No iniciado","Media","APRIL","Alberto Carlos Espinosa Garavito","2026-04-30","","2026-05-07","100","0"],
+["Kickoff, canales de trabajo, RACI","Inicio","Completado","Crítico","APRIL","Alberto Carlos Espinosa Garavito","2026-02-05","2026-02-14","2026-02-14","100","100"],
+["AS-IS del proceso + pain points","Investigación","Completado","Alto","APRIL","Alberto Carlos Espinosa Garavito","2026-02-06","2026-02-13","2026-02-13","100","100"],
+["Inventario de datos/artefactos + permisos","Investigación","Completado","Alto","APRIL","Alberto Carlos Espinosa Garavito","2026-02-18","2026-02-20","2026-02-23","100","100"],
+["Soporte e incidentes","Operación/Impacto","No iniciado","Baja","APRIL","Alberto Carlos Espinosa Garavito","2026-05-07","","2026-07-15","100","0"],
+["Seguimiento ex-post mensual (KPIs + ROI)","Operación/Impacto","No iniciado","Crítico","APRIL","Alberto Carlos Espinosa Garavito","2026-05-07","","2026-07-15","100","0"],
+["Cierre MVP + lecciones aprendidas","Planeación","No iniciado","Baja","APRIL","Alberto Carlos Espinosa Garavito","2026-07-10","","2026-07-15","100","0"],
+["URS + criterios de aceptación (AC)","Requerimientos","Completado","Crítico","APRIL","Alberto Carlos Espinosa Garavito","2026-02-04","2026-02-13","2026-02-13","100","100"],
+["AS-IS del proceso + pain points","Investigación","Completado","Alto","SARA","Alberto Carlos Espinosa Garavito","2025-08-08","2025-10-02","2025-10-03","100","100"],
+["Kickoff, canales de trabajo, RACI","Inicio","Completado","Crítico","SARA","Alberto Carlos Espinosa Garavito","2025-08-08","2025-10-02","2025-10-03","100","100"],
+["Inventario de datos/artefactos + permisos","Investigación","Completado","Alto","SARA","Alberto Carlos Espinosa Garavito","2025-10-06","2025-10-14","2025-10-14","100","100"],
+["Soporte e incidentes","Operación/Impacto","No iniciado","Baja","SARA","Alberto Carlos Espinosa Garavito","2026-05-08","","2026-08-15","100","0"],
+["URS + criterios de aceptación (AC)","Requerimientos","Completado","Crítico","SARA","Alberto Carlos Espinosa Garavito","2026-02-05","2026-02-11","2026-02-12","100","100"],
+["Seguimiento ex-post mensual (KPIs + ROI)","Operación/Impacto","No iniciado","Crítico","SARA","Alberto Carlos Espinosa Garavito","2026-05-08","","2026-08-15","100","0"],
+["Cierre MVP + lecciones aprendidas","Planeación","No iniciado","Baja","SARA","Alberto Carlos Espinosa Garavito","2026-08-15","","2026-08-19","100","0"],
+["App Azure (registro + permisos) + secrets","Despliegue","Completado","Alto","SARA","Alberto Carlos Espinosa Garavito","2026-04-17","2026-04-15","2026-04-24","100","100"],
+["Despliegue a Azure (infra + release) + rollback","Despliegue","Pendiente","Media","SARA","Alberto Carlos Espinosa Garavito","2026-04-20","","2026-05-08","100","0"],
+["Kickoff, canales de trabajo, RACI","Inicio","No iniciado","Crítico","NORA","Alberto Carlos Espinosa Garavito","","","","",""],
+["Cierre MVP + lecciones aprendidas","Planeación","No iniciado","Baja","NORA","Alberto Carlos Espinosa Garavito","","","","",""],
+["AS-IS del proceso + pain points","Investigación","No iniciado","Alto","NORA","Alberto Carlos Espinosa Garavito","","","","",""],
+["Inventario de datos/artefactos + permisos","Investigación","No iniciado","Alto","NORA","Alberto Carlos Espinosa Garavito","","","","",""],
+["App Azure (registro + permisos) + secrets","Despliegue","No iniciado","Alto","NORA","Alberto Carlos Espinosa Garavito","","","","",""],
+["Despliegue a Azure (infra + release) + rollback","Despliegue","No iniciado","Media","NORA","Alberto Carlos Espinosa Garavito","","","","",""],
+["Soporte e incidentes","Operación/Impacto","No iniciado","Baja","NORA","Alberto Carlos Espinosa Garavito","","","","",""],
+["Seguimiento ex-post mensual (KPIs + ROI)","Operación/Impacto","No iniciado","Crítico","NORA","Alberto Carlos Espinosa Garavito","","","","",""]
+];
+
+function fromSeed(){
+  return SEED_ROWS.map(r => mkRow(
+    r[0],r[1],r[2],r[3],r[4],r[5],r[7]||r[8],r[9],r[9],r[10]
+  )).filter(d=>d.proyecto);
+}
+
+function fromCSV(txt){
+  return parseCSV(txt).map(r=>mkRow(
+    r['Título'], r['Fase'], r['Progreso']||'No iniciado',
+    r['Prioridad'], r['Proyectos'], r['Asignado a'], r['Fecha de vencimiento'],
+    r['Porcentaje de avances'], r['PORCENTAJE TEORICO'], r['PORCENTAJE DE AVANCES REAL']
+  ));
+}
+
+// ─── FETCH ────────────────────────────────────────────────
+async function tryFetch(url, timeout=10000){
+  const ctrl = new AbortController();
+  const timer = setTimeout(()=>ctrl.abort(), timeout);
+  try {
+    const r = await fetch(url, { cache:'no-store', signal:ctrl.signal });
+    clearTimeout(timer);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const t = await r.text();
+    // Validar que sea CSV real
+    if(t.length < 100 || t.trim().startsWith('<') || t.trim().startsWith('{'))
+      throw new Error('Respuesta no es CSV (len='+t.length+')');
+    return t;
+  } finally { clearTimeout(timer); }
+}
+
+let isLoading = false;
+async function loadData(manual=false){
+  if(window.DASH_USER && !CURRENT_USER) CURRENT_USER = window.DASH_USER;
+  if(window.DASH_SESSION_START && !SESSION_START) SESSION_START = window.DASH_SESSION_START;
+  if(isLoading && !manual) return;
+  isLoading = true;
+  const rbtn = document.getElementById('rbtn');
+  if(rbtn) rbtn.classList.add('spinning');
+  document.getElementById('loading').className='show';
+  document.getElementById('lm').textContent = 'Conectando...';
+  setBadge('loading','Cargando...');
+
+  const GAS = 'https://script.google.com/macros/s/AKfycbywnn0Iv7FE14wWyZs-TenIxYMSrj5JgQuaAXTGNPB6lF1c7NGneP9jl2HjxuTo2xLGbw/exec';
+  const CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrnWAijWSlKPssfLNXXPJ1GbIjf7he2ioeYluk_s8zGGszZtf6FsL0v7slca8Kjo5NttjolPjC2cyW/pub?output=csv&gid=0';
+
+  let txt = null;
+
+  // Intentar cada fuente
+  const fuentes = [
+    { url: GAS + '?t=' + Date.now(), label: 'Apps Script' },
+    { url: 'https://corsproxy.io/?' + encodeURIComponent(CSV), label: 'Proxy 1' },
+    { url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(CSV), label: 'Proxy 2' },
+    { url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(CSV), label: 'Proxy 3' },
+    { url: 'https://thingproxy.freeboard.io/fetch/' + CSV, label: 'Proxy 4' },
+  ];
+
+  for(const f of fuentes){
+    try{
+      document.getElementById('lm').textContent = 'Intentando ' + f.label + '...';
+      const ctrl = new AbortController();
+      const t = setTimeout(()=>ctrl.abort(), 8000);
+      const r = await fetch(f.url, {signal:ctrl.signal, cache:'no-store', mode:'cors'});
+      clearTimeout(t);
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const data = await r.text();
+      if(data && data.length > 200 && data.includes(',') && !data.trim().startsWith('<')){
+        txt = data; 
+        console.log('✅ Conectado via', f.label);
+        break;
+      }
+    }catch(e){ console.warn('❌', f.label, e.message); }
+  }
+
+  // Si todo falla usar SEED
+  if(txt){
+    const rows = fromCSV(txt);
+    if(rows.length > 0){
+      DATA = rows;
+      setBadge('ok','En vivo · Google Sheets');
+      document.getElementById('err-banner').style.display='none';
+      document.getElementById('upd').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    } else { txt = null; }
+  }
+
+  if(!txt){
+    DATA = fromSeed();
+    setBadge('local','Datos guardados');
+    document.getElementById('err-banner').style.display='block';
+    document.getElementById('err-banner').innerHTML =
+      '<b>📋 Mostrando datos guardados.</b> Para datos en tiempo real: ' +
+      '<a href="' + GAS + '" target="_blank" style="color:#127270">verifica el Apps Script</a>.';
+    document.getElementById('upd').textContent = 'Última sincronización local';
+  }
+
+  buildFilters();
+  applyFilters();
+  document.getElementById('loading').className='';
+  if(rbtn) rbtn.classList.remove('spinning');
+  isLoading = false;
+});
+
+  document.getElementById('legSem').innerHTML = [
+    ['rgba(43,191,188,.45)','Programadas','rect'],
+    ['rgba(15,138,128,.85)','Completadas','rect'],
+    ['#c07800','% Cumplimiento','line'],
+    ['rgba(18,114,112,.7)','Semana actual','rect-bold'],
+  ].map(([c,l,t])=>
+    `<span class="leg-item">${
+      t==='rect'?`<span class="leg-box" style="background:${c}"></span>`
+      :t==='rect-bold'?`<span class="leg-box" style="background:${c};border:1px solid #4f7cff"></span>`
+      :`<span class="leg-line" style="background:${c}"></span>`
+    }${l}</span>`
+  ).join('');
+}
+
+// ─── SEMANA TABLE ─────────────────────────────────────────
+function renderSemana(){
+  const nk=wKey(TODAY), weeks=[];
+  for(let i=0;i<10;i++){ const d=new Date(TODAY); d.setDate(d.getDate()+i*7); weeks.push(wKey(d)); }
+  const projs = [...new Set(filtered.filter(d=>d.vencimiento).map(d=>d.proyecto))].sort();
+  const grid = {};
+  filtered.forEach(d=>{
+    const w=wKey(d.vencimiento);
+    if(!w||!weeks.includes(w)) return;
+    if(!grid[d.proyecto]) grid[d.proyecto]={};
+    if(!grid[d.proyecto][w]) grid[d.proyecto][w]=[];
+    grid[d.proyecto][w].push(d);
+  });
+  let h = '<thead><tr><th class="pth">Proyecto</th>';
+  weeks.forEach(w=>{ h+=`<th style="${w===nk?'color:#4f7cff':''}">${wLabelFull(w)}${w===nk?' ★':''}</th>`; });
+  h += '</tr></thead><tbody>';
+  if(!projs.length){
+    h += `<tr><td colspan="${weeks.length+1}" class="empty">Sin actividades con fecha en este rango.</td></tr>`;
+  } else {
+    projs.forEach(p=>{
+      h += `<tr><td class="ptd">${p}</td>`;
+      weeks.forEach(w=>{
+        const items=(grid[p]||{})[w]||[], v=items.length;
+        const c=v===0?'c0':v<=2?'c1':v<=4?'c2':'c3';
+        h += `<td class="${c}${v>0?' cc':''}${w===nk?' wn':''}" data-k="${p}||${w}">${v||'—'}</td>`;
+      });
+      h += '</tr>';
+    });
+    const tots = weeks.map(w=>filtered.filter(d=>wKey(d.vencimiento)===w));
+    h += '<tr style="border-top:1px solid rgba(255,255,255,.12)"><td class="ptd" style="color:var(--muted);font-weight:400;font-size:9px;">Total semana</td>';
+    tots.forEach((items,i)=>{
+      const v=items.length, w=weeks[i];
+      const c=v===0?'c0':v<=3?'c1':v<=7?'c2':'c3';
+      h += `<td class="${c}${v>0?' cc':''}${w===nk?' wn':''}" style="font-weight:700" data-k="Todos||${w}">${v||'—'}</td>`;
+    });
+    h += '</tr>';
+  }
+  h += '</tbody>';
+  document.getElementById('stbl').innerHTML = h;
+  document.querySelectorAll('#stbl .cc').forEach(td=>{
+    td.addEventListener('click',()=>{
+      const [proj,w] = td.dataset.k.split('||');
+      const items = filtered.filter(d=>wKey(d.vencimiento)===w&&(proj==='Todos'||d.proyecto===proj));
+      openModal((proj==='Todos'?'Semana':'Proyecto '+proj)+' · '+wLabelFull(w), items);
+    });
+  });
+}
+
+// ─── TABLA ────────────────────────────────────────────────
+function renderTabla(){
+  const s = getSorted(filtered);
+  document.getElementById('tct').textContent = s.length+' actividades';
+  if(!s.length){
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="10" class="empty">${DATA.length?'Sin actividades con los filtros aplicados.':'Cargando datos...'}</td></tr>`;
+    return;
+  }
+  document.getElementById('tbody').innerHTML = s.map(d=>{
+    const dc=d.dias===null?'dn':d.dias<0?'dv':d.dias<=3?'dc':d.dias<=7?'dw':'dp';
+    const dtxt=d.sem==='Completado'||d.dias===null?'—':d.dias<0?d.dias+' días':'+'+d.dias+' días';
+    const pct = d.pctAvance!==''&&d.pctAvance!==undefined ? parseInt(d.pctAvance)||0 : null;
+    const pctColor = pct===null?'var(--muted2)':pct>=70?'var(--green)':pct>=40?'var(--amber)':'var(--red)';
+    const pctCell = pct===null
+      ? `<td style="text-align:center;color:var(--muted2);font-size:9px;">—</td>`
+      : `<td style="min-width:80px;">
+          <div style="display:flex;align-items:center;gap:5px;">
+            <div style="flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;">
+              <div style="width:${Math.min(pct,100)}%;height:100%;background:${pctColor};border-radius:3px;transition:width .4s;"></div>
+            </div>
+            <span style="font-size:9px;font-weight:700;color:${pctColor};white-space:nowrap;">${pct}%</span>
+          </div>
+        </td>`;
+    return `<tr>
+      <td style="max-width:185px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${d.titulo}">${d.titulo}</td>
+      <td style="font-size:10px;white-space:nowrap;">${d.proyecto}</td>
+      <td style="font-size:9px;color:var(--muted);white-space:nowrap;">${d.asignado}</td>
+      <td style="font-size:9px;color:var(--muted);">${d.fase}</td>
+      <td><span class="edot" style="background:${EC[d.estado]||'#7c82a0'}"></span><span style="font-size:9px;">${d.progreso}</span></td>
+      <td>${bPrio(d.prioridad)}</td>
+      ${pctCell}
+      <td style="font-size:9px;white-space:nowrap;">${fd(d.vencimiento)}</td>
+      <td><span class="${dc}" style="font-size:9px;">${dtxt}</span></td>
+      <td>${bSem(d.sem)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── AVANCES ──────────────────────────────────────────────
+let skAv = 'titulo', sdAv = 1;
+function srtAv(k){ if(skAv===k) sdAv*=-1; else { skAv=k; sdAv=1; } renderAvances(); }
+
+function pctBar(val, width=60){
+  if(val===''||val===undefined) return `<span style="color:var(--muted2);font-size:9px;">—</span>`;
+  const n = Math.min(parseInt(val)||0, 100);
+  const color = n>=70?'var(--green)':n>=40?'var(--amber)':'var(--red)';
+  return `<div style="display:flex;align-items:center;gap:6px;">
+    <div style="width:${width}px;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;flex-shrink:0;">
+      <div style="width:${n}%;height:100%;background:${color};border-radius:3px;transition:width .4s;"></div>
+    </div>
+    <span style="font-size:10px;font-weight:700;color:${color};white-space:nowrap;">${n}%</span>
+  </div>`;
+}
+
+function desvCell(teo, real){
+  if(teo===''||real==='') return `<span style="color:var(--muted2);font-size:9px;">—</span>`;
+  const t = parseInt(teo)||0, r = parseInt(real)||0;
+  const diff = r - t;
+  const color = diff>=0?'var(--green)':'var(--red)';
+  const sign = diff>=0?'+':'';
+  return `<span style="font-size:10px;font-weight:700;color:${color};">${sign}${diff}%</span>`;
+}
+
+function buildAvFiltro(){
+  const projs = [...new Set(DATA.map(d=>d.proyecto))].filter(Boolean).sort();
+  const sel = document.getElementById('fa-proy');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos los proyectos</option>';
+  projs.forEach(p=>{ const o=document.createElement('option'); o.value=o.textContent=p; sel.appendChild(o); });
+  sel.value = cur;
+}
+
+function renderAvances(){
+  const sel = document.getElementById('fa-proy');
+  const fProy = sel ? sel.value : '';
+  let rows = DATA.filter(d => !fProy || d.proyecto===fProy);
+
+  // Ordenar
+  rows = [...rows].sort((a,b)=>{
+    let av=a[skAv]||'', bv=b[skAv]||'';
+    if(skAv==='pctTeorico'||skAv==='pctAvance'||skAv==='pctReal'){
+      av=parseInt(av)||0; bv=parseInt(bv)||0;
+      return sdAv*(av-bv);
+    }
+    return sdAv*String(av).localeCompare(String(bv));
+  });
+
+  const cnt = document.getElementById('av-count');
+  if(cnt) cnt.textContent = rows.length+' actividades';
+
+  const tbody = document.getElementById('av-tbody');
+  if(!tbody) return;
+  if(!rows.length){
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">Sin actividades.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(d=>`
+    <tr>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${d.titulo}">${d.titulo}</td>
+      <td style="font-size:10px;white-space:nowrap;">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${PC[d.proyecto]||'#7c82a0'};margin-right:5px;"></span>${d.proyecto}
+      </td>
+      <td style="font-size:9px;color:var(--muted);white-space:nowrap;">${d.asignado}</td>
+      <td style="padding:8px 12px;">${pctBar(d.pctTeorico)}</td>
+      <td style="padding:8px 12px;">${pctBar(d.pctAvance)}</td>
+      <td style="padding:8px 12px;">${pctBar(d.pctReal)}</td>
+      <td style="text-align:center;">${desvCell(d.pctTeorico, d.pctReal)}</td>
+    </tr>`).join('');
+}
+
+// ─── RENDER ALL ───────────────────────────────────────────
+function renderAll(){
+  renderKPIs(); renderBars(); renderChartTrimestral(); renderChartSemanal();
+  renderSemana(); renderTabla(); buildAvFiltro(); renderAvances();
+  // Notificaciones automáticas (solo si admin ya logueado)
+  if(CURRENT_USER?.rol==='admin') setTimeout(checkVencimientosYNotificar, 4000);
+}
+
+function showPage(id,btn){
+  // Guard admin pages
+  if((id==='accesos'||id==='estadisticas') && CURRENT_USER?.rol!=='admin'){
+    showToast('⛔ Solo el administrador puede acceder a esta sección.');
+    return;
+  }
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const page=document.getElementById('page-'+id);
+  if(page) page.classList.add('active');
+  if(btn) btn.classList.add('active');
+  // Render páginas admin on demand
+  if(id==='accesos') renderAccesos();
+  if(id==='estadisticas') renderEstadisticas();
+  // Mi semana
+  if(id==='misemana'){ buildMsPersona(); buildMsSemanas(); renderMiSemana(); }
+}
+
+
+
+// ─── INIT ─────────────────────────────────────────────────
+// Auto-refresh cada 3 minutos solo si hay sesión activa
+setInterval(function(){ if(window.DASH_USER && typeof loadData==='function') loadData(false); }, 3*60*1000);
+
+
+</script>
+
+</body>
+</html>
