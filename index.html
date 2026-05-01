@@ -449,7 +449,7 @@ select:focus{border-color:#009999;box-shadow:0 0 0 3px rgba(0,153,153,.12);}
 // FUENTE DE DATOS — Google Apps Script (proxy personal)
 // URL fija — siempre conecta sin configuración adicional
 // ════════════════════════════════════════════════════════
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbw2lhBzPXRkxDDu6C4egwwZvoBCPqpEGJxEHpbmyK7TuZ0kaO1m__vGoDgKqRRKQlwAKQ/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzqHviE6BzzIuQ1NjmRuv954PwCtHud8dOKya64bncy-tX7Tlyp5IT7HRO_bbFZuH0I/exec';
 
 // Fallback: proxies públicos apuntando al CSV original
 const CSV_DIRECT = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrnWAijWSlKPssfLNXXPJ1GbIjf7he2ioeYluk_s8zGGszZtf6FsL0v7slca8Kjo5NttjolPjC2cyW/pub?output=csv&gid=0';
@@ -545,57 +545,127 @@ async function tryFetch(url, timeout=10000){
 }
 
 let isLoading = false;
+
+// ══ DATOS EMBEBIDOS (respaldo cuando no hay conexión) ══════
+const SEED_DATA = [
+["AS-IS del proceso + pain points","Investigación","Completado","Alto","Mariana - MCD","Alberto Carlos Espinosa Garavito","2025-12-02","2025-12-11","2025-12-11","100","100"],
+["Inventario de datos/artefactos + permisos","Investigación","Completado","Alto","Mariana - MCD","Alberto Carlos Espinosa Garavito","2026-01-06","2026-01-12","2026-01-13","100","100"],
+["URS + criterios de aceptación (AC)","Requerimientos","Completado","Crítico","Mariana - MCD","Alberto Carlos Espinosa Garavito","2025-12-09","2025-12-15","2025-12-15","100","100"],
+["App Azure + secrets","Despliegue","Completado","Alto","Mariana - MCD","Alberto Carlos Espinosa Garavito","2026-02-16","2026-04-15","2026-04-24","100","100"],
+["Despliegue a Azure + rollback","Despliegue","Pendiente","Media","Mariana - MCD","Alberto Carlos Espinosa Garavito","2026-02-21","","2026-05-09","100","0"],
+["Soporte e incidentes","Operación/Impacto","En Programación","Baja","Mariana - MCD","Alberto Carlos Espinosa Garavito","2026-03-02","","2026-05-15","100","0"],
+["Seguimiento ex-post mensual","Operación/Impacto","No iniciado","Crítico","Mariana - MCD","Alberto Carlos Espinosa Garavito","2026-03-02","","2026-06-30","100","0"],
+["Cierre MVP + lecciones aprendidas","Planeación","No iniciado","Baja","Mariana - MCD","Alberto Carlos Espinosa Garavito","2026-06-26","","2026-07-02","100","0"],
+["Kickoff, canales de trabajo, RACI","Inicio","Completado","Crítico","Mariana - MCD","Alberto Carlos Espinosa Garavito","2025-12-02","2025-12-05","2025-12-05","100","100"],
+["App Azure + secrets","Despliegue","Completado","Alto","SEMA - PMA","Alberto Carlos Espinosa Garavito","2026-01-19","2026-04-17","2026-02-20","100","100"],
+["Despliegue a Azure + rollback","Despliegue","Completado","Media","SEMA - PMA","Alberto Carlos Espinosa Garavito","2026-01-05","2026-04-17","2026-02-20","100","100"],
+["Kickoff, canales de trabajo, RACI","Inicio","Completado","Crítico","SEMA - PMA","Alberto Carlos Espinosa Garavito","2025-12-02","2025-12-05","2025-12-05","100","100"],
+["AS-IS del proceso + pain points","Investigación","Completado","Alto","SEMA - PMA","Alberto Carlos Espinosa Garavito","2025-12-16","2025-12-16","2026-01-23","100","100"],
+["Inventario de datos/artefactos + permisos","Investigación","Completado","Alto","SEMA - PMA","Alberto Carlos Espinosa Garavito","2025-12-16","2025-12-16","2025-12-19","100","100"],
+["Soporte e incidentes","Operación/Impacto","En curso","Baja","SEMA - PMA","Alberto Carlos Espinosa Garavito","2026-04-17","","2026-06-30","100","15"],
+["Seguimiento ex-post mensual","Operación/Impacto","En curso","Crítico","SEMA - PMA","Alberto Carlos Espinosa Garavito","2026-04-17","","2026-07-20","100","15"],
+["Cierre MVP + lecciones aprendidas","Planeación","No iniciado","Baja","SEMA - PMA","Alberto Carlos Espinosa Garavito","2026-07-13","","2026-07-25","100","0"],
+["URS + criterios de aceptación (AC)","Requerimientos","Completado","Crítico","SEMA - PMA","Alberto Carlos Espinosa Garavito","2025-12-11","2025-12-15","2025-12-15","100","100"],
+["App Azure + secrets","Despliegue","Completado","Alto","Aura - CCMA","Alberto Carlos Espinosa Garavito","2026-01-05","2026-01-13","2026-01-16","100","100"],
+["Despliegue a Azure + rollback","Despliegue","Pendiente","Media","Aura - CCMA","Alberto Carlos Espinosa Garavito","2026-01-19","","2026-05-22","100","0"],
+["Kickoff, canales de trabajo, RACI","Inicio","Completado","Crítico","Aura - CCMA","Alberto Carlos Espinosa Garavito","2025-12-01","2025-12-05","2025-12-05","100","100"],
+["AS-IS del proceso + pain points","Investigación","Completado","Alto","Aura - CCMA","Alberto Carlos Espinosa Garavito","2025-12-15","2025-12-19","2025-12-19","100","100"],
+["Soporte e incidentes","Operación/Impacto","En curso","Baja","Aura - CCMA","Alberto Carlos Espinosa Garavito","2026-02-23","","2026-05-22","100","0"],
+["URS + criterios de aceptación (AC)","Requerimientos","Completado","Crítico","Aura - CCMA","Alberto Carlos Espinosa Garavito","2025-12-08","2025-12-15","2025-12-15","100","100"],
+["App Azure + secrets","Despliegue","Completado","Alto","ERICA v2","Alberto Carlos Espinosa Garavito","2026-03-26","2026-04-15","2026-04-24","100","100"],
+["Despliegue a Azure + rollback","Despliegue","Pendiente","Media","ERICA v2","Alberto Carlos Espinosa Garavito","2026-04-20","","2026-05-10","100","0"],
+["Kickoff, canales de trabajo, RACI","Inicio","Completado","Crítico","ERICA v2","Alberto Carlos Espinosa Garavito","2026-02-03","2026-02-09","2026-02-10","100","100"],
+["AS-IS del proceso + pain points","Investigación","Completado","Alto","ERICA v2","Alberto Carlos Espinosa Garavito","2026-01-27","2026-02-02","2026-02-03","100","100"],
+["Soporte e incidentes","Operación/Impacto","No iniciado","Baja","ERICA v2","Alberto Carlos Espinosa Garavito","2026-05-05","","2026-07-30","100","0"],
+["URS + criterios de aceptación (AC)","Requerimientos","Completado","Crítico","ERICA v2","Alberto Carlos Espinosa Garavito","2026-01-27","2026-02-02","2026-02-03","100","100"],
+["App Azure + secrets","Despliegue","No iniciado","Alto","TALIA","Alberto Carlos Espinosa Garavito","2026-05-25","","2026-05-30","100","0"],
+["Kickoff, canales de trabajo, RACI","Inicio","Completado","Crítico","TALIA","Alberto Carlos Espinosa Garavito","2026-02-05","2026-02-13","2026-02-14","100","100"],
+["AS-IS del proceso + pain points","Investigación","Completado","Alto","TALIA","Alberto Carlos Espinosa Garavito","2026-02-05","2026-02-13","2026-02-14","100","100"],
+["URS + criterios de aceptación (AC)","Requerimientos","Completado","Crítico","TALIA","Alberto Carlos Espinosa Garavito","2026-02-05","2026-02-14","2026-02-14","100","100"],
+["App Azure + secrets","Despliegue","Completado","Alto","APRIL","Alberto Carlos Espinosa Garavito","2026-04-10","2026-04-15","2026-04-24","100","100"],
+["Despliegue a Azure + rollback","Despliegue","No iniciado","Media","APRIL","Alberto Carlos Espinosa Garavito","2026-04-30","","2026-05-07","100","0"],
+["Kickoff, canales de trabajo, RACI","Inicio","Completado","Crítico","APRIL","Alberto Carlos Espinosa Garavito","2026-02-05","2026-02-14","2026-02-14","100","100"],
+["AS-IS del proceso + pain points","Investigación","Completado","Alto","APRIL","Alberto Carlos Espinosa Garavito","2026-02-06","2026-02-13","2026-02-13","100","100"],
+["URS + criterios de aceptación (AC)","Requerimientos","Completado","Crítico","APRIL","Alberto Carlos Espinosa Garavito","2026-02-04","2026-02-13","2026-02-13","100","100"],
+["Soporte e incidentes","Operación/Impacto","No iniciado","Baja","APRIL","Alberto Carlos Espinosa Garavito","2026-05-07","","2026-07-15","100","0"],
+["Kickoff, canales de trabajo, RACI","Inicio","Completado","Crítico","SARA","Alberto Carlos Espinosa Garavito","2025-08-08","2025-10-02","2025-10-03","100","100"],
+["URS + criterios de aceptación (AC)","Requerimientos","Completado","Crítico","SARA","Alberto Carlos Espinosa Garavito","2026-02-05","2026-02-11","2026-02-12","100","100"],
+["App Azure + secrets","Despliegue","Completado","Alto","SARA","Alberto Carlos Espinosa Garavito","2026-04-17","2026-04-15","2026-04-24","100","100"],
+["Despliegue a Azure + rollback","Despliegue","Pendiente","Media","SARA","Alberto Carlos Espinosa Garavito","2026-04-20","","2026-05-08","100","0"],
+["Soporte e incidentes","Operación/Impacto","No iniciado","Baja","SARA","Alberto Carlos Espinosa Garavito","2026-05-08","","2026-08-15","100","0"],
+["Kickoff, canales de trabajo, RACI","Inicio","No iniciado","Crítico","NORA","Alberto Carlos Espinosa Garavito","","","","",""],
+["AS-IS del proceso + pain points","Investigación","No iniciado","Alto","NORA","Alberto Carlos Espinosa Garavito","","","","",""],
+["App Azure + secrets","Despliegue","No iniciado","Alto","NORA","Alberto Carlos Espinosa Garavito","","","","",""],
+["Soporte e incidentes","Operación/Impacto","No iniciado","Baja","NORA","Alberto Carlos Espinosa Garavito","","","","",""],
+["Kickoff, canales de trabajo, RACI","Inicio","No iniciado","Crítico","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Desarrollo de FrontEnd","Desarrollo e Ingeniería","No iniciado","Crítico","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["Implementación core (Python)","Desarrollo e Ingeniería","No iniciado","Alto","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+["URS + criterios de aceptación (AC)","Requerimientos","No iniciado","Crítico","EPHI","Alberto Carlos Espinosa Garavito","","","","",""],
+];
+
 async function loadData(manual=false){
   if(isLoading && !manual) return;
   isLoading = true;
   const rbtn = document.getElementById('rbtn');
-  rbtn.classList.add('spinning');
-  document.getElementById('loading').style.display = DATA.length===0 ? 'flex' : 'none';
-  setBadge('loading','Actualizando...');
+  if(rbtn) rbtn.classList.add('spinning');
+  setBadge('loading','Conectando...');
 
-  let txt = null, sourceLabel = '';
-
-  // 1. Google Apps Script (principal — sin CORS)
-  document.getElementById('lm').textContent = 'Conectando vía Google Apps Script...';
-  try {
-    txt = await tryFetch(GAS_URL + '?nocache=' + Date.now());
-    sourceLabel = 'Apps Script';
-  } catch(e) {
-    console.warn('GAS failed:', e.message);
+  // Mostrar spinner solo si no hay datos
+  if(DATA.length === 0){
+    document.getElementById('loading').style.display = 'flex';
+    document.getElementById('lm').textContent = 'Cargando datos...';
   }
 
-  // 2. Fallback: proxies CORS públicos
-  if(!txt){
-    for(let i=0; i<PROXIES.length; i++){
-      document.getElementById('lm').textContent = `Proxy alternativo ${i+1}...`;
-      try {
-        txt = await tryFetch(PROXIES[i](CSV_DIRECT + '&t=' + Date.now()), 8000);
-        sourceLabel = `Proxy ${i+1}`;
-        break;
-      } catch(e){ console.warn(`Proxy ${i+1} failed:`, e.message); }
-    }
+  const ID = '1nAg_8qlmwlcU47xOsI6Fu3aJNm1q8EFLWbVasy2kiiM';
+  const PUB = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrnWAijWSlKPssfLNXXPJ1GbIjf7he2ioeYluk_s8zGGszZtf6FsL0v7slca8Kjo5NttjolPjC2cyW/pub?output=csv&gid=0';
+  const GAS = GAS_URL;
+  const t = Date.now();
+
+  const FUENTES = [
+    `https://docs.google.com/spreadsheets/d/${ID}/gviz/tq?tqx=out:csv&sheet=Hoja1&t=${t}`,
+    PUB + '&t=' + t,
+    GAS + '?t=' + t,
+    'https://corsproxy.io/?' + encodeURIComponent(PUB),
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(PUB),
+  ];
+
+  let txt = null, fuente = '';
+  for(let i=0; i<FUENTES.length; i++){
+    try{
+      const ctrl = new AbortController();
+      const timer = setTimeout(()=>ctrl.abort(), 7000);
+      const r = await fetch(FUENTES[i], {signal:ctrl.signal, cache:'no-store'});
+      clearTimeout(timer);
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const d = await r.text();
+      if(d && d.length>100 && d.includes(',') && d.includes('\n') && !d.trim().startsWith('<')){
+        txt=d; fuente=['GViz','CSV','Apps Script','Proxy1','Proxy2'][i]; break;
+      }
+    }catch(e){ console.warn('Fuente',i+1,'falló:',e.message); }
   }
 
   if(txt){
     const rows = fromCSV(txt);
     if(rows.length > 0){
       DATA = rows;
-      setBadge('ok', 'En vivo · ' + sourceLabel);
-      document.getElementById('err-banner').style.display = 'none';
-      document.getElementById('upd').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-      buildFilters();
-      applyFilters();
-    } else {
-      setBadge('err','Sin filas en el CSV');
-      showErr('Se recibió respuesta pero no hay filas con datos. Verifica que la hoja esté publicada correctamente.');
-    }
-  } else {
-    setBadge('err','Sin conexión');
-    showErr(`No se pudo conectar con Google Sheets. Verifica que el Apps Script esté publicado con acceso "Cualquiera" y que la hoja esté publicada como CSV en Archivo → Publicar en la web.`);
+      setBadge('ok','🟢 En vivo · '+fuente);
+      document.getElementById('err-banner').style.display='none';
+      document.getElementById('upd').textContent='Actualizado: '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      buildFilters(); applyFilters();
+    } else { txt=null; }
   }
 
-  document.getElementById('loading').style.display = 'none';
-  rbtn.classList.remove('spinning');
+  if(!txt){
+    // Usar datos embebidos como respaldo — siempre disponibles
+    DATA = SEED_DATA.map(r=>mkRow(r[0],r[1],r[2],r[3],r[4],r[5],r[8],r[9],r[9],r[10],r[6],r[7])).filter(d=>d.proyecto);
+    setBadge('local','🟡 Datos locales');
+    document.getElementById('upd').textContent='Datos guardados · '+new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+    buildFilters(); applyFilters();
+  }
+
+  // SIEMPRE ocultar el spinner
+  document.getElementById('loading').style.display='none';
+  if(rbtn) rbtn.classList.remove('spinning');
   isLoading = false;
 }
 
