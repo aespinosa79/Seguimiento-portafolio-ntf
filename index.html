@@ -59,7 +59,7 @@ body{
   gap:16px;z-index:9999;
   display:none;
 }
-#loading.visible{display:flex;}
+#loading.show{display:flex !important;}
 .spinner{
   width:44px;height:44px;
   border:2px solid #d6eded;border-top-color:#2bbfbc;
@@ -582,6 +582,7 @@ function doLogin(){
   if(typeof CURRENT_USER!=='undefined') CURRENT_USER=user;
   if(typeof SESSION_START!=='undefined') SESSION_START=window.DASH_SESSION_START;
   // Llamar loadData con reintentos
+  // Llamar loadData cuando esté lista
   var _tries = 0;
   function _tryLoad(){
     _tries++;
@@ -589,14 +590,20 @@ function doLogin(){
       loadData(true);
       if(user.rol==='admin' && typeof checkVencimientosYNotificar==='function')
         setTimeout(checkVencimientosYNotificar, 6000);
-    } else if(_tries < 20){
-      setTimeout(_tryLoad, 200);
+    } else if(_tries < 30){
+      setTimeout(_tryLoad, 300);
     } else {
+      // Timeout — ocultar spinner y continuar sin datos remotos
       document.getElementById('loading').className='';
-      alert('Error cargando el dashboard. Recarga la página.');
+      if(typeof fromSeed==='function' && typeof buildFilters==='function'){
+        DATA = fromSeed();
+        buildFilters();
+        applyFilters();
+        setBadge('local','Datos guardados');
+      }
     }
   }
-  setTimeout(_tryLoad, 200);
+  setTimeout(_tryLoad, 300);
 }
 
 function doLogout(){
@@ -639,7 +646,7 @@ document.addEventListener('DOMContentLoaded',function(){
 <body>
 
 <!-- ══ LOADING ══ -->
-<div id="loading">
+<div id="loading" style="display:none!important">
   <div class="spinner"></div>
   <p class="lt">Portafolio NTF 2026</p>
   <p class="lm" id="lm">Cargando datos...</p>
