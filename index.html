@@ -110,32 +110,32 @@ body{
 .live-loading{color:rgba(255,255,255,.6);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);}
 .live-dot{width:5px;height:5px;border-radius:50%;animation:pulse 1.5s infinite;}
 .today-b{
-  font-size:9px;color:rgba(255,255,255,.7);
-  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
+  font-size:9px;color:#ffffff;
+  background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);
   padding:3px 9px;border-radius:20px;letter-spacing:.2px;
 }
 .tabs{display:flex;gap:3px;}
 .tab{
   font-size:11px;padding:5px 13px;border-radius:5px;
-  border:1px solid transparent;cursor:pointer;
-  background:rgba(255,255,255,.08);
-  color:rgba(255,255,255,.65);
-  transition:all .15s;font-weight:500;
+  border:1px solid rgba(255,255,255,.5);cursor:pointer;
+  background:rgba(255,255,255,.18);
+  color:#ffffff;
+  transition:all .15s;font-weight:600;
 }
 .tab.active{
   background:#fff;color:#127270;
-  border-color:rgba(255,255,255,.5);
+  border-color:#fff;
   font-weight:600;
   box-shadow:0 2px 10px rgba(0,0,0,.15);
 }
 .tab:hover:not(.active){background:rgba(255,255,255,.15);color:#fff;}
 .refresh-btn{
   font-size:11px;padding:5px 11px;border-radius:5px;
-  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);
-  color:rgba(255,255,255,.85);cursor:pointer;
-  display:flex;align-items:center;gap:4px;transition:all .15s;font-weight:500;
+  background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);
+  color:#ffffff;cursor:pointer;
+  display:flex;align-items:center;gap:4px;transition:all .15s;font-weight:600;
 }
-.refresh-btn:hover{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.4);}
+.refresh-btn:hover{background:rgba(255,255,255,.32);border-color:#fff;}
 .refresh-btn.spinning svg{animation:spin .7s linear infinite;}
 
 /* ── FILTERS ── */
@@ -574,13 +574,21 @@ function doLogin(){
   if(user.rol==='admin'){
     document.querySelectorAll('.admin-only').forEach(function(el){el.style.display='';});
   }
-  // Mostrar spinner y cargar datos
-  var ldg=document.getElementById('loading');
-  ldg.className='show'; // usa CSS display:flex
-  document.getElementById('lm').textContent='Cargando datos...';
+  // Cargar datos SEED inmediatamente (sin esperar conexión)
+  if(typeof fromSeed==='function' && typeof buildFilters==='function'){
+    DATA = fromSeed();
+    buildFilters();
+    applyFilters();
+    setBadge('local','Datos guardados');
+    document.getElementById('upd').textContent='Cargando datos en tiempo real...';
+  }
   // Sincronizar con el script principal
   if(typeof CURRENT_USER!=='undefined') CURRENT_USER=user;
   if(typeof SESSION_START!=='undefined') SESSION_START=window.DASH_SESSION_START;
+  // Mostrar spinner para la carga remota
+  var ldg=document.getElementById('loading');
+  ldg.className='show';
+  document.getElementById('lm').textContent='Actualizando con Google Sheets...';
   // Llamar loadData con reintentos
   // Llamar loadData cuando esté lista
   var _tries = 0;
@@ -1491,65 +1499,85 @@ async function loadData(manual=false){
   isLoading = true;
   const rbtn = document.getElementById('rbtn');
   if(rbtn) rbtn.classList.add('spinning');
-  document.getElementById('loading').className='show';
-  document.getElementById('lm').textContent = 'Conectando...';
-  setBadge('loading','Cargando...');
 
+  // Mostrar spinner solo si no hay datos aún
+  if(DATA.length === 0){
+    document.getElementById('loading').className='show';
+    document.getElementById('lm').textContent = 'Conectando con Google Sheets...';
+  }
+  setBadge('loading','Conectando...');
+
+  const CSV_DIRECTO = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrnWAijWSlKPssfLNXXPJ1GbIjf7he2ioeYluk_s8zGGszZtf6FsL0v7slca8Kjo5NttjolPjC2cyW/pub?output=csv&gid=0';
   const GAS = 'https://script.google.com/macros/s/AKfycbywnn0Iv7FE14wWyZs-TenIxYMSrj5JgQuaAXTGNPB6lF1c7NGneP9jl2HjxuTo2xLGbw/exec';
-  const CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrnWAijWSlKPssfLNXXPJ1GbIjf7he2ioeYluk_s8zGGszZtf6FsL0v7slca8Kjo5NttjolPjC2cyW/pub?output=csv&gid=0';
 
-  let txt = null;
-
-  // Intentar cada fuente
-  const fuentes = [
-    { url: GAS + '?t=' + Date.now(), label: 'Apps Script' },
-    { url: 'https://corsproxy.io/?' + encodeURIComponent(CSV), label: 'Proxy 1' },
-    { url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(CSV), label: 'Proxy 2' },
-    { url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(CSV), label: 'Proxy 3' },
-    { url: 'https://thingproxy.freeboard.io/fetch/' + CSV, label: 'Proxy 4' },
+  const FUENTES = [
+    CSV_DIRECTO + '&t=' + Date.now(),
+    GAS + '?t=' + Date.now(),
+    'https://corsproxy.io/?' + encodeURIComponent(CSV_DIRECTO),
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(CSV_DIRECTO),
+    'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(CSV_DIRECTO),
   ];
 
-  for(const f of fuentes){
+  let txt = null;
+  let fuente = '';
+
+  for(let i = 0; i < FUENTES.length; i++){
     try{
-      document.getElementById('lm').textContent = 'Intentando ' + f.label + '...';
       const ctrl = new AbortController();
-      const t = setTimeout(()=>ctrl.abort(), 8000);
-      const r = await fetch(f.url, {signal:ctrl.signal, cache:'no-store', mode:'cors'});
-      clearTimeout(t);
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      const data = await r.text();
-      if(data && data.length > 200 && data.includes(',') && !data.trim().startsWith('<')){
-        txt = data; 
-        console.log('✅ Conectado via', f.label);
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      const r = await fetch(FUENTES[i], {
+        signal: ctrl.signal,
+        cache: 'no-store',
+        headers: {'Accept': 'text/plain,text/csv,*/*'}
+      });
+      clearTimeout(timer);
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      const t = await r.text();
+      if(t && t.length > 200 && t.includes(',') && t.includes('\n') && !t.trim().startsWith('<')){
+        txt = t;
+        fuente = i === 0 ? 'Google Sheets' : i === 1 ? 'Apps Script' : 'Proxy ' + (i-1);
+        console.log('✅ Datos cargados desde:', fuente);
         break;
       }
-    }catch(e){ console.warn('❌', f.label, e.message); }
+    } catch(e){
+      console.warn('Fuente', i+1, 'falló:', e.message);
+    }
   }
 
-  // Si todo falla usar SEED
   if(txt){
     const rows = fromCSV(txt);
     if(rows.length > 0){
       DATA = rows;
-      setBadge('ok','En vivo · Google Sheets');
-      document.getElementById('err-banner').style.display='none';
-      document.getElementById('upd').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    } else { txt = null; }
+      setBadge('ok', '🟢 En vivo · ' + fuente);
+      document.getElementById('err-banner').style.display = 'none';
+      document.getElementById('upd').textContent =
+        'Actualizado: ' + new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      buildFilters();
+      applyFilters();
+    } else {
+      // CSV vacío — usar SEED
+      txt = null;
+    }
   }
 
   if(!txt){
-    DATA = fromSeed();
-    setBadge('local','Datos guardados');
-    document.getElementById('err-banner').style.display='block';
-    document.getElementById('err-banner').innerHTML =
-      '<b>📋 Mostrando datos guardados.</b> Para datos en tiempo real: ' +
-      '<a href="' + GAS + '" target="_blank" style="color:#127270">verifica el Apps Script</a>.';
-    document.getElementById('upd').textContent = 'Última sincronización local';
+    // Usar datos SEED como respaldo
+    if(DATA.length === 0){
+      DATA = fromSeed();
+      buildFilters();
+      applyFilters();
+    }
+    setBadge('local', '🟡 Datos guardados');
+    document.getElementById('upd').textContent = 'Última sincronización local · ' +
+      new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+    if(manual){
+      document.getElementById('err-banner').style.display = 'block';
+      document.getElementById('err-banner').innerHTML =
+        '⚠ No se pudo conectar con Google Sheets en tiempo real. Mostrando datos guardados.';
+    }
   }
 
-  buildFilters();
-  applyFilters();
-  document.getElementById('loading').className='';
+  document.getElementById('loading').className = '';
   if(rbtn) rbtn.classList.remove('spinning');
   isLoading = false;
 });
