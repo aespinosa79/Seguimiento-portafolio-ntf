@@ -449,10 +449,10 @@ select:focus{border-color:#009999;box-shadow:0 0 0 3px rgba(0,153,153,.12);}
 // FUENTE DE DATOS — Google Apps Script (proxy personal)
 // URL fija — siempre conecta sin configuración adicional
 // ════════════════════════════════════════════════════════
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzqHviE6BzzIuQ1NjmRuv954PwCtHud8dOKya64bncy-tX7Tlyp5IT7HRO_bbFZuH0I/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzE6AkWdvUDih9iS2C3VK5NdaS-OIgGfnUn0UqnrHKxGoaoJ50dm1eY54G91nDy3-AX/exec';
 
 // Fallback: proxies públicos apuntando al CSV original
-const CSV_DIRECT = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrnWAijWSlKPssfLNXXPJ1GbIjf7he2ioeYluk_s8zGGszZtf6FsL0v7slca8Kjo5NttjolPjC2cyW/pub?output=csv&gid=0';
+const CSV_DIRECT = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSklSQ2F6UEPSOnzWATbW8hN5k9tf83neZC-4UMm3ukyDzOpy5-zOnZUupoAdREnjCOBIxH1NOroWnB/pub?gid=0&single=true&output=csv';
 const PROXIES = [
   u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
   u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
@@ -617,7 +617,7 @@ async function loadData(manual=false){
   }
 
   const ID = '1nAg_8qlmwlcU47xOsI6Fu3aJNm1q8EFLWbVasy2kiiM';
-  const PUB = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrnWAijWSlKPssfLNXXPJ1GbIjf7he2ioeYluk_s8zGGszZtf6FsL0v7slca8Kjo5NttjolPjC2cyW/pub?output=csv&gid=0';
+  const PUB = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSklSQ2F6UEPSOnzWATbW8hN5k9tf83neZC-4UMm3ukyDzOpy5-zOnZUupoAdREnjCOBIxH1NOroWnB/pub?gid=0&single=true&output=csv';
   const GAS = GAS_URL;
   const t = Date.now();
 
