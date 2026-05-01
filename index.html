@@ -1499,48 +1499,52 @@ async function loadData(manual=false){
   isLoading = true;
   const rbtn = document.getElementById('rbtn');
   if(rbtn) rbtn.classList.add('spinning');
-
-  // Mostrar spinner solo si no hay datos aún
   if(DATA.length === 0){
     document.getElementById('loading').className='show';
     document.getElementById('lm').textContent = 'Conectando con Google Sheets...';
   }
   setBadge('loading','Conectando...');
 
-  const CSV_DIRECTO = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrnWAijWSlKPssfLNXXPJ1GbIjf7he2ioeYluk_s8zGGszZtf6FsL0v7slca8Kjo5NttjolPjC2cyW/pub?output=csv&gid=0';
+  // URLs a intentar en orden
+  const t = Date.now();
+  const ID = '1nAg_8qlmwlcU47xOsI6Fu3aJNm1q8EFLWbVasy2kiiM';
+  const PUB = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrnWAijWSlKPssfLNXXPJ1GbIjf7he2ioeYluk_s8zGGszZtf6FsL0v7slca8Kjo5NttjolPjC2cyW/pub?output=csv&gid=0';
   const GAS = 'https://script.google.com/macros/s/AKfycbywnn0Iv7FE14wWyZs-TenIxYMSrj5JgQuaAXTGNPB6lF1c7NGneP9jl2HjxuTo2xLGbw/exec';
 
   const FUENTES = [
-    CSV_DIRECTO + '&t=' + Date.now(),
-    GAS + '?t=' + Date.now(),
-    'https://corsproxy.io/?' + encodeURIComponent(CSV_DIRECTO),
-    'https://api.allorigins.win/raw?url=' + encodeURIComponent(CSV_DIRECTO),
-    'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(CSV_DIRECTO),
+    // 1. Google Visualization API - SÍ tiene CORS desde HTTPS
+    { url: `https://docs.google.com/spreadsheets/d/${ID}/gviz/tq?tqx=out:csv&sheet=Hoja1&t=${t}`, label: 'Sheets Direct' },
+    // 2. CSV publicado directo
+    { url: PUB + '&t=' + t, label: 'CSV Publicado' },
+    // 3. Apps Script
+    { url: GAS + '?t=' + t, label: 'Apps Script' },
+    // 4. Proxies
+    { url: 'https://corsproxy.io/?' + encodeURIComponent(PUB + '&t=' + t), label: 'Proxy 1' },
+    { url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(PUB), label: 'Proxy 2' },
+    { url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(PUB), label: 'Proxy 3' },
   ];
 
   let txt = null;
   let fuente = '';
 
-  for(let i = 0; i < FUENTES.length; i++){
+  for(const f of FUENTES){
     try{
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 8000);
-      const r = await fetch(FUENTES[i], {
-        signal: ctrl.signal,
-        cache: 'no-store',
-        headers: {'Accept': 'text/plain,text/csv,*/*'}
-      });
+      const timer = setTimeout(() => ctrl.abort(), 9000);
+      const r = await fetch(f.url, { signal: ctrl.signal, cache: 'no-store' });
       clearTimeout(timer);
       if(!r.ok) throw new Error('HTTP ' + r.status);
-      const t = await r.text();
-      if(t && t.length > 200 && t.includes(',') && t.includes('\n') && !t.trim().startsWith('<')){
-        txt = t;
-        fuente = i === 0 ? 'Google Sheets' : i === 1 ? 'Apps Script' : 'Proxy ' + (i-1);
-        console.log('✅ Datos cargados desde:', fuente);
+      const data = await r.text();
+      if(data && data.length > 100 && data.includes(',') && data.includes('\n') && !data.trim().startsWith('<') && !data.trim().startsWith('{')){
+        txt = data;
+        fuente = f.label;
+        console.log('✅ Conectado via:', fuente, '| Filas:', data.split('\n').length);
         break;
+      } else {
+        console.warn('⚠', f.label, '- respuesta inválida, largo:', data.length, 'inicio:', data.substring(0,50));
       }
     } catch(e){
-      console.warn('Fuente', i+1, 'falló:', e.message);
+      console.warn('❌', f.label, ':', e.message);
     }
   }
 
@@ -1550,33 +1554,26 @@ async function loadData(manual=false){
       DATA = rows;
       setBadge('ok', '🟢 En vivo · ' + fuente);
       document.getElementById('err-banner').style.display = 'none';
-      document.getElementById('upd').textContent =
-        'Actualizado: ' + new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      document.getElementById('upd').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
       buildFilters();
       applyFilters();
-    } else {
-      // CSV vacío — usar SEED
-      txt = null;
+      document.getElementById('loading').className = '';
+      if(rbtn) rbtn.classList.remove('spinning');
+      isLoading = false;
+      return;
     }
   }
 
-  if(!txt){
-    // Usar datos SEED como respaldo
-    if(DATA.length === 0){
-      DATA = fromSeed();
-      buildFilters();
-      applyFilters();
-    }
-    setBadge('local', '🟡 Datos guardados');
-    document.getElementById('upd').textContent = 'Última sincronización local · ' +
-      new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
-    if(manual){
-      document.getElementById('err-banner').style.display = 'block';
-      document.getElementById('err-banner').innerHTML =
-        '⚠ No se pudo conectar con Google Sheets en tiempo real. Mostrando datos guardados.';
-    }
+  // Fallback: datos SEED
+  if(DATA.length === 0){
+    DATA = fromSeed();
+    buildFilters();
+    applyFilters();
   }
-
+  setBadge('local', '🟡 Datos guardados');
+  document.getElementById('upd').textContent = 'Datos locales · ' + new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('err-banner').style.display = 'block';
+  document.getElementById('err-banner').innerHTML = '🟡 Mostrando datos guardados. Presiona <b>↻ Actualizar</b> para reintentar conexión.';
   document.getElementById('loading').className = '';
   if(rbtn) rbtn.classList.remove('spinning');
   isLoading = false;
